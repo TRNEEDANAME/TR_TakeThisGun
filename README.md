@@ -1,6 +1,6 @@
 ## Description
 
-This is the github repository of the **mod project** folder for my [Take This mod]([https://steamcommunity.com/sharedfiles/filedetails/?id=2869237069](https://steamcommunity.com/sharedfiles/filedetails/?id=3479387127)). 
+This is the github repository of the **mod project** folder for my [Take This mod](https://steamcommunity.com/sharedfiles/filedetails/?id=2869237069). 
 This will be the most up to date project folder from the mod, even before it's on steam.
 
 ## How to build the mod
