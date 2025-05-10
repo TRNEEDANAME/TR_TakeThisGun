@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Default" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Guid>dbef2602-f1db-4a5b-a685-65554e261df8</Guid>
+    <Name>TR_TakeThisGun</Name>
+    <Description>TR_TakeThisGun.</Description>
+    <SteamPublishID>0</SteamPublishID>
+    <AssemblyName>TR_TakeThisGun</AssemblyName>
+    <RootNamespace>TR_TakeThisGun</RootNamespace>
+    <ProjectGuid>{b60befdc-1d87-4af9-abf8-0a6485c44ccf}</ProjectGuid>
+  </PropertyGroup>
+  <ItemGroup>
+    <Folder Include="Config\" />
+    <Folder Include="Config\Base\" />
+    <Folder Include="Localization\" />
+    <Folder Include="Src\" />
+    <Folder Include="Content\" />
+    <Folder Include="ContentForCook\" />
+    <Folder Include="Src\TR_TakeThisGun\" />
+    <Folder Include="Src\TR_TakeThisGun\Classes\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Config\XcomTR_TakeThis.ini">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="ReadMe.txt" />
+    <Content Include="ModPreview.jpg" />
+    <Content Include="ContentOptions.json" />
+    <Content Include="Config\Base\XComEditor.ini" />
+    <Content Include="Config\Base\XComEngine.ini" />
+    <Content Include="Config\Base\XComGame.ini" />
+    <Content Include="Config\XComTemplateCreator.ini" />
+    <Content Include="Config\XComTemplateEditor.ini" />
+    <Content Include="Localization\XComGame.int" />
+    <Content Include="Localization\TR_TakeThisGun.int" />
+    <Content Include="Src\extra_globals.uci" />
+    <Content Include="Src\TR_TakeThisGun\Classes\X2AbilityCharges_TR_TakeThisCharge.uc">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="Src\TR_TakeThisGun\Classes\X2AbilityCharges_TR_TakeThisGunCharge.uc">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="Src\TR_TakeThisGun\Classes\X2Ability_TR_TakeThis.uc">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="Src\TR_TakeThisGun\Classes\X2DLCInfo_TR_TakeThisGun.uc" />
+    <Content Include="Src\TR_TakeThisGun\Classes\Help.uc" />
+    <Content Include="Src\TR_TakeThisGun\Classes\ConfigEngine.uc" />
+    <Content Include="Src\TR_TakeThisGun\Classes\X2Effect_TR_AddRandomAbilities.uc">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="Src\TR_TakeThisGun\Classes\X2Effect_TR_TemporaryItem.uc">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="Src\TR_TakeThisGun\Classes\XComGameState_TR_Effect_TemporaryItem.uc">
+      <SubType>Content</SubType>
+    </Content>
+  </ItemGroup>
+  <PropertyGroup>
+    <SolutionRoot>$(MSBuildProjectDirectory)\..\</SolutionRoot>
+    <ScriptsDir>$(SolutionRoot).scripts\\</ScriptsDir>
+    <BuildCommonRoot>$(ScriptsDir)X2ModBuildCommon\</BuildCommonRoot>
+  </PropertyGroup>
+  <Import Project="$(BuildCommonRoot)XCOM2.targets" />
+</Project>
