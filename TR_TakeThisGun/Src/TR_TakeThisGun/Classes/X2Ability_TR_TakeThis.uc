@@ -24,15 +24,16 @@ struct native TR_TakeThisGun_AbilityStruct
     var string IconPath;
 
     // === Action Point & Range Settings ===
-    var config int APCost;              // Default: 1
-    var config bool ConsumeAllAP;       // Default: false
-    var config int Range;               // Default: 96
+    var  int APCost;              // Default: 1
+    var  bool ConsumeAllAP;       // Default: false
+    var  int Range;               // Default: 96
+	var name SlotName;
 
     // === Stat Modifications ===
-    var config int AimChange;               // Default: 50
-    var config int SightChange;             // Default: 15
-    var config int DetectionRadiusChange;   // Default: 9
-    var config int MobilityChange;          // Default: -1
+    var  int AimChange;               // Default: 50
+    var  int SightChange;             // Default: 15
+    var  int DetectionRadiusChange;   // Default: 9
+    var  int MobilityChange;          // Default: -1
 
     // === Charge System ===
     var int ChargesDefault;
@@ -67,12 +68,17 @@ struct native TR_TakeThisGun_AbilityStruct
 
     // === Random Ability Assignment ===
     var bool RandAbilities;
-    var array<name> RandAbilitiesToAdd;
     var float RandAbilitiesChance;
+	var array<name> RandAbilitiesToAdd;
 
     // === Extra Stat Modifications ===
     var bool ChangeExtraStats;
     var array<NamePair> ExtraStats;
+
+    // === Units to give the ability to ===
+	var bool GrantAbilityToClasses;
+	var array<name> Classes;
+
 
     structdefaultproperties
     {
@@ -80,11 +86,12 @@ struct native TR_TakeThisGun_AbilityStruct
     }
 };
 
-
 // Default ability stuff
 var config int TR_TakeThis_APCost; // 1 by default
 var config bool TR_TakeThis_ConsumeAllAP; // false by default
 var config int TR_TakeThis_Range; // 96 by default
+var config bool TR_TakeThis_GrantAbilityToClass;
+var config array<name> TR_TakeThis_Classes;
 
 // Charges
 var config int TR_TakeThis_ChargesDefault;
@@ -108,7 +115,6 @@ var config bool TR_TakeThis_IsPlayerControlled; // true
 var config bool TR_TakeThis_IsImpaired; // false
 var config bool TR_TakeThis_RequireSquadmates; // true
 var config bool TR_TakeThis_ExcludeNonCivilian; // true
-
 
 // Gun stat change
 var config int TR_TakeThis_AimChange; // 50 by default
@@ -159,10 +165,12 @@ static function X2AbilityTemplate AddPassSidearm()
 	local X2Effect_PersistentStatChange			StatEffect;
 	local X2Condition_AbilityProperty			ShooterAbilityCondition;
 	local NamePair                              StatPair;
-	local XComGameState_Item                    ItemState, WeaponState;
+	local XComGameState_Item                    ItemState;
 	local XComGameState_Ability                 Ability;
-    local name                                  WeaponName;
-	local name                                  WeaponType;
+	local X2CharacterTemplateManager            CharMgr;
+	local X2CharacterTemplate                   CharacterTemplate;
+	local name                                  ClassName;
+	local int									i;
 	
 	`CREATE_X2ABILITY_TEMPLATE(Template, 'TR_TakeThis');
 	Template.IconImage = "img:///UILibrary_LWOTC.LW_AbilityTakeThis";
@@ -233,16 +241,31 @@ static function X2AbilityTemplate AddPassSidearm()
 	Template.AbilityTargetConditions.AddItem (TargetWeaponCondition);
 	
 	ItemState = Ability.GetSourceWeapon();
-	WeaponType = WeaponState.GetWeaponCategory();
-	WeaponName = WeaponTemplate.DataName;
 
 	TemporaryItemEffect = new class'X2Effect_TR_TemporaryItem';
 	TemporaryItemEffect.EffectName = 'TakeThisEffect';
-	TemporaryItemEffect.ItemName = GetWeaponBasedTech(ItemState, WeaponType, WeaponName, true);
+	TemporaryItemEffect.ItemName = GetWeaponBasedTech(ItemState, 'pistol', 'pistol', true);
 	TemporaryItemEffect.bIgnoreItemEquipRestrictions = true;
 	TemporaryItemEffect.BuildPersistentEffect(1, true, false);
 	TemporaryItemEffect.DuplicateResponse = eDupe_Ignore;
 	Template.AddTargetEffect(TemporaryItemEffect);
+	
+	// Grant to class
+	if (default.TR_TakeThis_GrantAbilityToClass)
+	{
+		CharMgr = class'X2CharacterTemplateManager'.static.GetCharacterTemplateManager();
+	
+		for (i = 0; i < default.TR_TakeThis_Classes.Length; i++)
+		{
+			ClassName = default.TR_TakeThis_Classes[i];
+			CharacterTemplate = CharMgr.FindCharacterTemplate(ClassName);
+	
+			if (CharacterTemplate != none)
+			{
+				CharacterTemplate.Abilities.AddItem('TR_TakeThis');
+			}
+		}
+	}
 
 	StatEffect = new class 'X2Effect_PersistentStatChange';
 	StatEffect.AddPersistentStatChange (eStat_Offense, default.TR_TakeThis_AimChange); // 50 by default
@@ -283,6 +306,10 @@ static function X2AbilityTemplate TR_TakeThisGun_Abilities(TR_TakeThisGun_Abilit
 	local XComGameState_Item                    ItemState;
 	local XComGameStateContext_Ability          AbilityContext;
 	local XComGameStateContext_Ability          Context;
+	local X2CharacterTemplateManager            CharMgr;
+	local X2CharacterTemplate                   CharacterTemplate;
+	local name                                  ClassName;
+	local bool                                  bAlreadyHasAbility;
 	local int                                   i, j;
 	
 	`CREATE_X2ABILITY_TEMPLATE(Template, AbilityConfig.TemplateName);
@@ -365,7 +392,7 @@ static function X2AbilityTemplate TR_TakeThisGun_Abilities(TR_TakeThisGun_Abilit
 
 	TargetWeaponCondition = new class 'X2Condition_UnitInventory';
 	TargetWeaponCondition.ExcludeWeaponCategory = AbilityConfig.WeaponType;
-	TargetWeaponCondition.RelevantSlot = eInvSlot_Utility;
+	TargetWeaponCondition.RelevantSlot = SlotNameToInvSlot(AbilityConfig.SlotName);
 	Template.AbilityTargetConditions.AddItem (TargetWeaponCondition);
 	
 	TemporaryItemEffect = new class'X2Effect_TR_TemporaryItem';
@@ -378,6 +405,7 @@ static function X2AbilityTemplate TR_TakeThisGun_Abilities(TR_TakeThisGun_Abilit
 	TemporaryItemEffect.DuplicateResponse = eDupe_Ignore;
 	Template.AddTargetEffect(TemporaryItemEffect);
 
+	// Standard ability to add
 	for (i = 0; i < AbilityConfig.StdAbilityToAdd.length; i++)
 	{
 		WeaponTemplate.Abilities.AddItem(AbilityConfig.StdAbilityToAdd[i]);
@@ -391,6 +419,41 @@ static function X2AbilityTemplate TR_TakeThisGun_Abilities(TR_TakeThisGun_Abilit
 		RandAbilityEffect.ChancePercent = AbilityConfig.RandAbilitiesChance;
 		Template.AddTargetEffect(RandAbilityEffect);
 	}
+
+	if (AbilityConfig.GrantAbilityToClasses)
+	{
+		CharMgr = class'X2CharacterTemplateManager'.static.GetCharacterTemplateManager();
+
+		for (i = 0; i < AbilityConfig.Classes.Length; i++)
+		{
+			ClassName = AbilityConfig.Classes[i];
+			CharacterTemplate = CharMgr.FindCharacterTemplate(ClassName);
+
+			if (CharacterTemplate != none)
+			{
+				bAlreadyHasAbility = false;
+
+				for (j = 0; j < CharacterTemplate.Abilities.Length; j++)
+				{
+					if (CharacterTemplate.Abilities[j] == AbilityConfig.TemplateName)
+					{
+						bAlreadyHasAbility = true;
+						break;
+					}
+				}
+
+				if (!bAlreadyHasAbility)
+				{
+					CharacterTemplate.Abilities.AddItem(AbilityConfig.TemplateName);
+				}
+			}
+			else
+			{
+				`LOG("TR_TakeThisGun_Abilities ERROR: Could not find class template for " $ ClassName,, 'XCom_Gameplay');
+			}
+		}
+	}
+
 	
 	StatEffect = new class 'X2Effect_PersistentStatChange';
 	StatEffect.AddPersistentStatChange (eStat_Offense, AbilityConfig.AimChange); // 50 by default
@@ -515,5 +578,21 @@ static function ECharStatType StatNameToEnum(name StatName)
         case 'SightRadius': return eStat_SightRadius;
         case 'DetectionRadius': return eStat_DetectionRadius;
         default: return eStat_Invalid; // Failsafe
+    }
+}
+
+static function EInventorySlot SlotNameToInvSlot(name SlotName)
+{
+    switch (SlotName)
+    {
+        case 'Primairy': return eInvSlot_PrimaryWeapon;
+        case 'Secondary': return eInvSlot_SecondaryWeapon;
+        case 'Tertiary': return eInvSlot_TertiaryWeapon;
+        case 'Quaternary': return eInvSlot_QuaternaryWeapon;
+        case 'Quinary': return eInvSlot_QuinaryWeapon;
+        case 'Senary': return eInvSlot_SenaryWeapon;
+        case 'Septenary': return eInvSlot_SeptenaryWeapon;
+        case 'Heavy': return eInvSlot_HeavyWeapon;
+        default: return eInvSlot_PrimaryWeapon; // in doubt, return primairy slot
     }
 }
