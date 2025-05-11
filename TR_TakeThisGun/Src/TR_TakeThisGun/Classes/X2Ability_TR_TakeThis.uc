@@ -68,7 +68,7 @@ struct native TR_TakeThisGun_AbilityStruct
 
     // === Random Ability Assignment ===
     var bool RandAbilities;
-    var float RandAbilitiesChance;
+    var int RandAbilitiesChance;
 	var array<name> RandAbilitiesToAdd;
 
     // === Extra Stat Modifications ===
@@ -128,6 +128,7 @@ var config array <NamePair> TR_TakeThis_ExtraStats; // Empty by default
 
 // Random abilities to give
 var config bool TR_TakeThis_AddRandomAbilities; // False by default
+var config int TR_TakeThis_RandAbilitiesChance; // 50 by default
 var config array<name> TR_TakeThis_RandAbilitiesToAdd;
 
 var config array<TR_TakeThisGun_AbilityStruct> Abilities;
@@ -169,6 +170,7 @@ static function X2AbilityTemplate AddPassSidearm()
 	local XComGameState_Ability                 Ability;
 	local X2CharacterTemplateManager            CharMgr;
 	local X2CharacterTemplate                   CharacterTemplate;
+	local X2Effect_TR_AddRandomAbilities        RandAbilityEffect;
 	local name                                  ClassName;
 	local int									i;
 	
@@ -204,6 +206,14 @@ static function X2AbilityTemplate AddPassSidearm()
 		}
 	}
 	 Template.AbilityCharges = Charges;
+
+	if (default.TR_TakeThis_AddRandomAbilities)
+	{
+		RandAbilityEffect = new class'X2Effect_TR_AddRandomAbilities';
+		RandAbilityEffect.RandAbilities = default.TR_TakeThis_RandAbilitiesToAdd;
+		RandAbilityEffect.ChancePercent = default.TR_TakeThis_RandAbilitiesChance;
+		Template.AddTargetEffect(RandAbilityEffect);
+	}
 
 
 	ChargeCost = new class'X2AbilityCost_Charges';
