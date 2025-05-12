@@ -12,7 +12,7 @@ class X2Ability_TR_TakeThis extends X2Ability config(TR_TakeThis);
 // We do a bit of struct as table weirdness
 struct NamePair
 {
-    var name statName;
+    var name name;
     var int value;
 };
 
@@ -34,6 +34,10 @@ struct native TR_TakeThisGun_AbilityStruct
     var  int SightChange;             // Default: 15
     var  int DetectionRadiusChange;   // Default: 9
     var  int MobilityChange;          // Default: -1
+
+    // === Extra Stat Modifications ===
+    var bool ChangeExtraStats;
+    var array<NamePair> ExtraStats;
 
     // === Charge System ===
     var int ChargesDefault;
@@ -70,10 +74,6 @@ struct native TR_TakeThisGun_AbilityStruct
     var bool RandAbilities;
     var int RandAbilitiesChance;
 	var array<name> RandAbilitiesToAdd;
-
-    // === Extra Stat Modifications ===
-    var bool ChangeExtraStats;
-    var array<NamePair> ExtraStats;
 
     // === Units to give the ability to ===
 	var bool GrantAbilityToClasses;
@@ -135,36 +135,35 @@ var config array<TR_TakeThisGun_AbilityStruct> Abilities;
 
 static function array<X2DataTemplate> CreateTemplates()
 {
-	local array<X2DataTemplate> Templates;
-	local TR_TakeThisGun_AbilityStruct AbilityConfig;
+    local array<X2DataTemplate> Templates;
+    local TR_TakeThisGun_AbilityStruct AbilityConfig;
 
-	
-	Templates.AddItem(AddPassSidearm());
+    Templates.AddItem(AddPassSidearm());
 
-	// Just for fun
-	// I used Create Immunity abilities as a base	
-	foreach default.Abilities(AbilityConfig)
-	{
-		Templates.AddItem(TR_TakeThisGun_Abilities(AbilityConfig));
-	}
+// Just for fun
+// I used Create Immunity abilities as a base
+    foreach default.Abilities(AbilityConfig)
+    {
+        Templates.AddItem(TR_TakeThisGun_Abilities(AbilityConfig));
+    }
 
-	return Templates;
+    return Templates;
 }
 
 
 static function X2AbilityTemplate AddPassSidearm()
 {
-	local X2AbilityTemplate						Template;
+	local X2AbilityTemplate                     Template;
 	local X2WeaponTemplate                      WeaponTemplate;
-	local X2AbilityCost_ActionPoints			ActionPointCost;
-	local X2Condition_UnitProperty				UnitPropertyCondition;
-	local X2AbilityTarget_Single				SingleTarget;
-	local X2AbilityCharges_TR_TakeThisCharge	Charges;
-	local X2AbilityCost_Charges					ChargeCost;
-	local X2Condition_UnitInventory				TargetWeaponCondition;
-	local X2Effect_TR_TemporaryItem				TemporaryItemEffect;
-	local X2Effect_PersistentStatChange			StatEffect;
-	local X2Condition_AbilityProperty			ShooterAbilityCondition;
+	local X2AbilityCost_ActionPoints            ActionPointCost;
+	local X2Condition_UnitProperty              UnitPropertyCondition;
+	local X2AbilityTarget_Single                SingleTarget;
+	local X2AbilityCharges_TR_TakeThisCharge    Charges;
+	local X2AbilityCost_Charges                 ChargeCost;
+	local X2Condition_UnitInventory             TargetWeaponCondition;
+	local X2Effect_TR_TemporaryItem             TemporaryItemEffect;
+	local X2Effect_PersistentStatChange         StatEffect;
+	local X2Condition_AbilityProperty           ShooterAbilityCondition;
 	local NamePair                              StatPair;
 	local XComGameState_Item                    ItemState;
 	local XComGameState_Ability                 Ability;
@@ -173,7 +172,7 @@ static function X2AbilityTemplate AddPassSidearm()
 	local X2Effect_TR_AddRandomAbilities        RandAbilityEffect;
 	local name                                  ClassName;
 	local int									i;
-	
+
 	`CREATE_X2ABILITY_TEMPLATE(Template, 'TR_TakeThis');
 	Template.IconImage = "img:///UILibrary_LWOTC.LW_AbilityTakeThis";
 	Template.eAbilityIconBehaviorHUD = eAbilityIconBehavior_HideSpecificErrors;
@@ -183,7 +182,7 @@ static function X2AbilityTemplate AddPassSidearm()
 	Template.AbilityTriggers.AddItem(default.PlayerInputTrigger);
 	Template.bDisplayInUITooltip = false;
     Template.bLimitTargetIcons = true;
-	
+
 	SingleTarget = new class'X2AbilityTarget_Single';
 	SingleTarget.bIncludeSelf = false;
 	Template.AbilityTargetStyle = SingleTarget;
@@ -197,7 +196,7 @@ static function X2AbilityTemplate AddPassSidearm()
     Charges.InitialCharges = default.TR_TakeThis_ChargesDefault;
     Charges.BonusAbility = default.TR_TakeThis_ChargesBonusAbility;
     Charges.BonusAbilityCharges =  default.TR_TakeThis_ChargesBonusAmount;
-	
+
 	if (default.TR_TakeThis_ChargesBonusAllowAbilities)
 	{
 		foreach default.TR_TakeThis_ChargesBonusAbilities(StatPair)
@@ -249,7 +248,7 @@ static function X2AbilityTemplate AddPassSidearm()
 	TargetWeaponCondition.ExcludeWeaponCategory = 'pistol';
 	TargetWeaponCondition.RelevantSlot = eInvSlot_Utility;
 	Template.AbilityTargetConditions.AddItem (TargetWeaponCondition);
-	
+
 	ItemState = Ability.GetSourceWeapon();
 
 	TemporaryItemEffect = new class'X2Effect_TR_TemporaryItem';
@@ -259,17 +258,17 @@ static function X2AbilityTemplate AddPassSidearm()
 	TemporaryItemEffect.BuildPersistentEffect(1, true, false);
 	TemporaryItemEffect.DuplicateResponse = eDupe_Ignore;
 	Template.AddTargetEffect(TemporaryItemEffect);
-	
+
 	// Grant to class
 	if (default.TR_TakeThis_GrantAbilityToClass)
 	{
 		CharMgr = class'X2CharacterTemplateManager'.static.GetCharacterTemplateManager();
-	
+
 		for (i = 0; i < default.TR_TakeThis_Classes.Length; i++)
 		{
 			ClassName = default.TR_TakeThis_Classes[i];
 			CharacterTemplate = CharMgr.FindCharacterTemplate(ClassName);
-	
+
 			if (CharacterTemplate != none)
 			{
 				CharacterTemplate.Abilities.AddItem('TR_TakeThis');
@@ -321,7 +320,7 @@ static function X2AbilityTemplate TR_TakeThisGun_Abilities(TR_TakeThisGun_Abilit
 	local name                                  ClassName;
 	local bool                                  bAlreadyHasAbility;
 	local int                                   i, j;
-	
+
 	`CREATE_X2ABILITY_TEMPLATE(Template, AbilityConfig.TemplateName);
 
 	Template.IconImage = "img:///UILibrary_LWOTC.LW_AbilityTakeThis";
@@ -332,7 +331,7 @@ static function X2AbilityTemplate TR_TakeThisGun_Abilities(TR_TakeThisGun_Abilit
 	Template.AbilityTriggers.AddItem(default.PlayerInputTrigger);
 	Template.bDisplayInUITooltip = false;
     Template.bLimitTargetIcons = true;
-	
+
 	SingleTarget = new class'X2AbilityTarget_Single';
 	SingleTarget.bIncludeSelf = false;
 	Template.AbilityTargetStyle = SingleTarget;
@@ -363,7 +362,7 @@ static function X2AbilityTemplate TR_TakeThisGun_Abilities(TR_TakeThisGun_Abilit
 	Template.AddShooterEffectExclusions();
 
 	UnitPropertyCondition = new class'X2Condition_UnitProperty';
-	if(AbilityConfig.ChangeAbilityUnitCondition) 
+	if(AbilityConfig.ChangeAbilityUnitCondition)
 	{
 		UnitPropertyCondition.ExcludeDead = AbilityConfig.ExcludeDead;
 		UnitPropertyCondition.ExcludeHostileToSource = AbilityConfig.ExcludeHostileToSource;
@@ -377,7 +376,7 @@ static function X2AbilityTemplate TR_TakeThisGun_Abilities(TR_TakeThisGun_Abilit
 		UnitPropertyCondition.RequireSquadmates = AbilityConfig.RequireSquadmates;
 		UnitPropertyCondition.ExcludeNonCivilian = AbilityConfig.ExcludeNonCivilian;
 	}
-	else 
+	else
 	{
 		UnitPropertyCondition.ExcludeDead = true;
 		UnitPropertyCondition.ExcludeHostileToSource = true;
@@ -394,7 +393,7 @@ static function X2AbilityTemplate TR_TakeThisGun_Abilities(TR_TakeThisGun_Abilit
 
 	UnitPropertyCondition.WithinRange = AbilityConfig.Range;	// 96 = 1 adjacent tile
 	Template.AbilityTargetConditions.AddItem(UnitPropertyCondition);
-	
+
 	ShooterAbilityCondition = new class'X2Condition_AbilityProperty';
 	ShooterAbilityCondition.OwnerHasSoldierAbilities.AddItem (AbilityConfig.OwnerAbilityToCheck);
 	ShooterAbilityCondition.TargetMustBeInValidTiles = false;
@@ -404,10 +403,10 @@ static function X2AbilityTemplate TR_TakeThisGun_Abilities(TR_TakeThisGun_Abilit
 	TargetWeaponCondition.ExcludeWeaponCategory = AbilityConfig.WeaponType;
 	TargetWeaponCondition.RelevantSlot = SlotNameToInvSlot(AbilityConfig.SlotName);
 	Template.AbilityTargetConditions.AddItem (TargetWeaponCondition);
-	
+
 	TemporaryItemEffect = new class'X2Effect_TR_TemporaryItem';
 	TemporaryItemEffect.EffectName = 'TakeThisEffect';
-		
+
 	TemporaryItemEffect.ItemName = GetWeaponBasedTech(ItemState, AbilityConfig.WeaponType, AbilityConfig.WeaponName, AbilityConfig.Has5Tier);
 
 	TemporaryItemEffect.bIgnoreItemEquipRestrictions = true;
@@ -464,7 +463,7 @@ static function X2AbilityTemplate TR_TakeThisGun_Abilities(TR_TakeThisGun_Abilit
 		}
 	}
 
-	
+
 	StatEffect = new class 'X2Effect_PersistentStatChange';
 	StatEffect.AddPersistentStatChange (eStat_Offense, AbilityConfig.AimChange); // 50 by default
 	StatEffect.AddPersistentStatChange (eStat_SightRadius, AbilityConfig.SightChange); // 15 by default
@@ -473,7 +472,7 @@ static function X2AbilityTemplate TR_TakeThisGun_Abilities(TR_TakeThisGun_Abilit
 
 	foreach AbilityConfig.ExtraStats(StatPair)
 	{
-		StatEffect.AddPersistentStatChange(StatNameToEnum(StatPair.statName), StatPair.value);
+		StatEffect.AddPersistentStatChange(StatNameToEnum(StatPair.name), StatPair.value);
 	}
 
 	StatEffect.BuildPersistentEffect (1, true, false, false);
@@ -548,29 +547,29 @@ static function name GetWeaponBasedTech(XComGameState_Item ItemState, name weapo
 			}
 		}
 		// 5TWO only
-		else if (class'Help'.static.IsModActive('WOTCIridarWeaponOverhaulVanilla'))
-		{
-			switch (WeaponTemplate.WeaponCat)
-			{
-				case 'conventional': ResultSuffix = '_CV'; break;
-				case 'magnetic': ResultSuffix = '_MG'; break;
-				case 'WeaponTech_T3': ResultSuffix = '_T3'; break;
-				case 'WeaponTech_T4': ResultSuffix = '_T4'; break;
-				case 'beam': ResultSuffix = '_BM'; break;
-			}
-		}
-	}
-	else
-	{
-		// Vanilla fallback logic again
-		switch (WeaponTemplate.WeaponTech)
-		{
-			case 'conventional': ResultSuffix = '_CV'; break;
-			case 'magnetic': ResultSuffix = '_MG'; break;
-			case 'beam': ResultSuffix = '_BM'; break;
-		}
-	}
-	return name(weaponName $ ResultSuffix);
+        else if (class'Help'.static.IsModActive('WOTCIridarWeaponOverhaulVanilla'))
+        {
+            switch (WeaponTemplate.WeaponCat)
+            {
+                case 'conventional': ResultSuffix = '_CV'; break;
+                case 'magnetic': ResultSuffix = '_MG'; break;
+                case 'WeaponTech_T3': ResultSuffix = '_T3'; break;
+                case 'WeaponTech_T4': ResultSuffix = '_T4'; break;
+                case 'beam': ResultSuffix = '_BM'; break;
+            }
+        }
+    }
+    else
+    {
+// Vanilla fallback logic again
+        switch (WeaponTemplate.WeaponTech)
+        {
+            case 'conventional': ResultSuffix = '_CV'; break;
+            case 'magnetic': ResultSuffix = '_MG'; break;
+            case 'beam': ResultSuffix = '_BM'; break;
+        }
+    }
+    return name(weaponName $ ResultSuffix);
 }
 
 static function ECharStatType StatNameToEnum(name StatName)
