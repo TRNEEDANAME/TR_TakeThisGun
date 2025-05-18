@@ -16,6 +16,12 @@ struct NamePair
     var int value;
 };
 
+struct OfficerAbilitiesGivePerRank
+{
+    var int rank;
+    var array<name> abilities;
+};
+
 struct native TR_TakeThisGun_AbilityStruct
 {
     // === Basic Ability Metadata ===
@@ -65,6 +71,10 @@ struct native TR_TakeThisGun_AbilityStruct
     var name OwnerAbilityToCheck;
     var array<name> StdAbilityToAdd;
     var bool Has5Tier;
+
+	var bool GiveItems;
+	var array<name> ItemsToGive;
+	var array<name> SlotForItems;
 
     // === Random Ability Assignment ===
     var bool RandAbilities;
@@ -122,6 +132,11 @@ var config int TR_TakeThis_SightChange; // 15 by default
 var config int TR_TakeThis_DetectionRadiusChange; // 9 by default
 var config int TR_TakeThis_MobilityChange; // -1 by default
 
+// Items to give
+var config bool TR_TakeThis_GiveItems; // false by default
+var config array<name> TR_TakeThis_ItemsToGive; // Empty by default
+var config array<name> TR_TakeThis_SlotForItems; // Empty by default
+
 // Extra stats changed
 var config bool TR_TakeThis_ChangeExtraStats; // False by default
 var config array <NamePair> TR_TakeThis_ExtraStats; // Empty by default
@@ -172,7 +187,9 @@ static function X2AbilityTemplate AddPassSidearm()
 	local X2CharacterTemplate                   CharacterTemplate;
 	local X2Effect_TR_AddRandomAbilities        RandAbilityEffect;
 	local name                                  ClassName;
-	local int									i;
+	local int									i, j;
+	// LWOTC
+	local int                                   OfficerRank;
 	
 	`CREATE_X2ABILITY_TEMPLATE(Template, 'TR_TakeThis');
 	Template.IconImage = "img:///UILibrary_LWOTC.LW_AbilityTakeThis";
@@ -215,6 +232,18 @@ static function X2AbilityTemplate AddPassSidearm()
 		Template.AddTargetEffect(RandAbilityEffect);
 	}
 
+	// Items to give
+	if (default.TR_TakeThis_GiveItems)
+	{
+		for (j = 0; j < default.TR_TakeThis_ItemsToGive.Length; j++)
+		{
+			// Add the item
+			ItemState = new class'XComGameState_Item';
+			ItemState.ItemName = default.TR_TakeThis_ItemsToGive[j];
+			ItemState.Slot = SlotNameToInvSlot(default.TR_TakeThis_SlotForItems[j]);
+			TemporaryItemEffect.AddItem(ItemState);
+		}
+	}
 
 	ChargeCost = new class'X2AbilityCost_Charges';
 	ChargeCost.NumCharges = default.TR_TakeThis_ChargeCost;
@@ -277,6 +306,47 @@ static function X2AbilityTemplate AddPassSidearm()
 		}
 	}
 
+	// LWOTC 
+	if (class'Help'.static.IsModActive('LongWarOfTheChosen'))
+	{
+		// We get current officer
+		OfficerRank = 0;
+	    local XComGameState_Unit TargetUnit;
+		local XComGameState_Unit_LWOfficer OfficerComp;
+
+		OfficerComp = GetOfficerComponent(Unit);
+		if (OfficerComp != none)
+		{
+			OfficerRank = OfficerComp.GetOfficerRank();
+		}
+
+		if (AbilityConfig.OfficerGrantAbilities)
+		{
+			if (AbilityConfig.OfficerGrantAbilitiesRNG)
+			{
+				RandAbilityEffect = new class'X2Effect_TR_AddRandomAbilities';
+				RandAbilityEffect.RandAbilities = AbilityConfig.OfficerAbilitiesGivePerRank[0].abilities;
+				RandAbilityEffect.ChancePercent = AbilityConfig.RandAbilitiesChance;
+				Template.AddTargetEffect(RandAbilityEffect);
+			}
+
+			else 
+			{
+				// Based on rank, we give the ability using OfficerAbilitiesGivePerRank
+				for (j = 0; j < AbilityConfig.OfficerAbilitiesGivePerRank.Length; j++)
+				{
+					if (AbilityConfig.OfficerAbilitiesGivePerRank[j].rank == OfficerRank)
+					{
+						for (i = 0; i < AbilityConfig.OfficerAbilitiesGivePerRank[j].abilities.Length; i++)
+						{
+							CharacterTemplate.Abilities.AddItem(AbilityConfig.OfficerAbilitiesGivePerRank[j].abilities[i]);
+						}
+					}
+				}
+			}
+		}
+	}
+
 	StatEffect = new class 'X2Effect_PersistentStatChange';
 	StatEffect.AddPersistentStatChange (eStat_Offense, default.TR_TakeThis_AimChange); // 50 by default
 	StatEffect.AddPersistentStatChange (eStat_SightRadius, default.TR_TakeThis_SightChange); // 15 by default
@@ -320,7 +390,7 @@ static function X2AbilityTemplate TR_TakeThisGun_Abilities(TR_TakeThisGun_Abilit
 	local X2CharacterTemplate                   CharacterTemplate;
 	local name                                  ClassName;
 	local bool                                  bAlreadyHasAbility;
-	local int                                   i, j;
+	local int                                   i, j, k;
 	
 	`CREATE_X2ABILITY_TEMPLATE(Template, AbilityConfig.TemplateName);
 
@@ -421,6 +491,19 @@ static function X2AbilityTemplate TR_TakeThisGun_Abilities(TR_TakeThisGun_Abilit
 		WeaponTemplate.Abilities.AddItem(AbilityConfig.StdAbilityToAdd[i]);
 	}
 
+	// Give items ?
+	if (AbilityConfig.GiveItems)
+	{
+		for (k = 0; k < AbilityConfig.ItemsToGive.Length; k++)
+		{
+			// Add the item
+			ItemState = new class'XComGameState_Item';
+			ItemState.ItemName = AbilityConfig.ItemsToGive[k];
+			ItemState.Slot = SlotNameToInvSlot(AbilityConfig.SlotForItems[k]);
+			TemporaryItemEffect.AddItem(ItemState);
+		}
+	}
+
 	// Abilities are added via RNGesus
 	if (AbilityConfig.RandAbilities)
 	{
@@ -500,7 +583,7 @@ static function name GetWeaponBasedTech(XComGameState_Item ItemState, name weapo
 	{
 		return '';
 	}
-
+ 
 	WeaponTemplate = X2WeaponTemplate(ItemState.GetMyTemplate());
 
 	// If weapon category doesn't match, fallback to vanilla logic
