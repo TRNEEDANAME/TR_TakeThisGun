@@ -22,6 +22,13 @@ struct OfficerAbilitiesGivePerRank
     var array<name> abilities;
 };
 
+struct OfficerAbilitiesGivePerRankRand
+{
+    var int rank;
+	var array<int> RandAbilitiesChance;
+    var array<name> abilities;
+};
+
 struct native TR_TakeThisGun_AbilityStruct
 {
     // === Basic Ability Metadata ===
@@ -186,7 +193,7 @@ static function X2AbilityTemplate AddPassSidearm()
 	local X2CharacterTemplate                   CharacterTemplate;
 	local X2Effect_TR_AddRandomAbilities        RandAbilityEffect;
 	local name                                  ClassName;
-	local int									i, j;
+	local int									i, j, k;
 	// LWOTC
 	local int                                   OfficerRank;
 	
@@ -321,26 +328,25 @@ static function X2AbilityTemplate AddPassSidearm()
 
 		if (AbilityConfig.OfficerGrantAbilities)
 		{
-			if (AbilityConfig.OfficerGrantAbilitiesRNG)
+			if (AbilityConfig.OfficerGrantAbilitiesRNG && AbilityConfig.OfficerAbilitiesGivePerRankRand.Rank == OfficerRank)
 			{
-				RandAbilityEffect = new class'X2Effect_TR_AddRandomAbilities';
-				RandAbilityEffect.RandAbilities = AbilityConfig.OfficerAbilitiesGivePerRank[0].abilities;
-				RandAbilityEffect.ChancePercent = AbilityConfig.RandAbilitiesChance;
-				Template.AddTargetEffect(RandAbilityEffect);
+				for (k = 0; k < AbilityConfig.OfficerAbilitiesGivePerRankRand.Length; k++)
+				{
+					RandAbilityEffect = new class'X2Effect_TR_AddRandomAbilities';
+					RandAbilityEffect.RandAbilities = AbilityConfig.OfficerAbilitiesGivePerRankRand[k].abilities;
+					RandAbilityEffect.ChancePercent = AbilityConfig.OfficerAbilitiesGivePerRankRand[k].RandAbilitiesChance;
+					Template.AddTargetEffect(RandAbilityEffect);
+				}
 			}
 
-			else 
+			else if (AbilityConfig.OfficerAbilitiesGivePerRank.Rank == OfficerRank)
 			{
-				// Based on rank, we give the ability using OfficerAbilitiesGivePerRank
-				for (j = 0; j < AbilityConfig.OfficerAbilitiesGivePerRank.Length; j++)
+				for (k = 0; k < AbilityConfig.OfficerAbilitiesGivePerRank.Length; k++)
 				{
-					if (AbilityConfig.OfficerAbilitiesGivePerRank[j].rank == OfficerRank)
-					{
-						for (i = 0; i < AbilityConfig.OfficerAbilitiesGivePerRank[j].abilities.Length; i++)
-						{
-							CharacterTemplate.Abilities.AddItem(AbilityConfig.OfficerAbilitiesGivePerRank[j].abilities[i]);
-						}
-					}
+					RandAbilityEffect = new class'X2Effect_TR_AddRandomAbilities';
+					RandAbilityEffect.RandAbilities = AbilityConfig.OfficerAbilitiesGivePerRank[k].abilities;
+					RandAbilityEffect.ChancePercent = 100;
+					Template.AddTargetEffect(RandAbilityEffect);
 				}
 			}
 		}
@@ -366,7 +372,6 @@ static function X2AbilityTemplate AddPassSidearm()
 	return Template;
 }
 
-// This is fun, but VERY unbalanced, done as an experiment more than anything serious
 static function X2AbilityTemplate TR_TakeThisGun_Abilities(TR_TakeThisGun_AbilityStruct AbilityConfig)
 {
 	local X2AbilityTemplate						Template;
