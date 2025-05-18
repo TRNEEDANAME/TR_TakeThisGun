@@ -492,76 +492,42 @@ static function X2AbilityTemplate TR_TakeThisGun_Abilities(TR_TakeThisGun_Abilit
 
 static function name GetWeaponBasedTech(XComGameState_Item ItemState, name weaponType, name weaponName, bool has5Tier)
 {
-	local X2WeaponTemplate WeaponTemplate;
-	local name ResultSuffix;
+    local X2WeaponTemplate WeaponTemplate;
+    local name ResultSuffix;
+    local string weaponNameStr;
+    local string resultStr;
 
-	if (ItemState == none)
-	{
-		return '';
-	}
+    if (ItemState == none)
+    {
+        return '';
+    }
 
-	WeaponTemplate = X2WeaponTemplate(ItemState.GetMyTemplate());
+    WeaponTemplate = X2WeaponTemplate(ItemState.GetMyTemplate());
 
-	// If weapon category doesn't match, fallback to vanilla logic
-	if (WeaponTemplate.WeaponCat != weaponType)
-	{
-		// Vanilla fallback
-		switch (WeaponTemplate.WeaponTech)
-		{
-			case 'conventional':
-				ResultSuffix = '_CV';
-				break;
-			case 'magnetic':
-				ResultSuffix = '_MG';
-				break;
-			case 'beam':
-				ResultSuffix = '_BM';
-				break;
-		}
-	}
-	else if (WeaponTemplate.WeaponCat == weaponType)
-	{
-		// LWOTC only
-		if (class'Help'.static.IsModActive('LongWarOfTheChosen') && !class'Help'.static.IsModActive('WOTCIridarWeaponOverhaulVanilla'))
-		{
-			switch (WeaponTemplate.WeaponCat)
-			{
-				case 'conventional': ResultSuffix = '_CV'; break;
-				case 'laser_lw': ResultSuffix = '_lS'; break;
-				case 'magnetic': ResultSuffix = '_MG'; break;
-				case 'coilgun_lw': ResultSuffix = '_CG'; break;
-				case 'beam': ResultSuffix = '_BM'; break;
-			}
-		}
-		// LWOTC + 5TWO + ModJam
-		else if (class'Help'.static.IsModActive('LongWarOfTheChosen') && class'Help'.static.IsModActive('WOTCIridarWeaponOverhaulVanilla') &&
-				 (class'Help'.static.IsModActive('ModJamLWOTC') || class'Help'.static.IsModActive('ModJamLWOTC_M2') || class'Help'.static.IsModActive('TedModJamForLWOTC')))
-		{
-			switch (WeaponTemplate.WeaponCat)
-			{
-				case 'conventional': ResultSuffix = '_CV'; break;
-				case 'magnetic': ResultSuffix = '_MG'; break;
-				case 'WeaponTech_T3': ResultSuffix = '_T3'; break;
-				case 'WeaponTech_T4': ResultSuffix = '_T4'; break;
-				case 'beam': ResultSuffix = '_BM'; break;
-			}
-		}
-		// 5TWO only
-        else if (class'Help'.static.IsModActive('WOTCIridarWeaponOverhaulVanilla'))
+    // If weapon category doesn't match, fallback to vanilla logic
+    switch (WeaponTemplate.WeaponCat)
+    {
+        case 'conventional': ResultSuffix = 'CV'; break;
+        case 'magnetic': ResultSuffix = '_MG'; break;
+        case 'WeaponTech_T3': ResultSuffix = '_T3'; break;
+        case 'WeaponTech_T4': ResultSuffix = '_T4'; break;
+        case 'beam': ResultSuffix = '_BM'; break;
+    }
+    // 5TWO only
+    else if (class'Help'.static.IsModActive('WOTCIridarWeaponOverhaulVanilla'))
+    {
+        switch (WeaponTemplate.WeaponCat)
         {
-            switch (WeaponTemplate.WeaponCat)
-            {
-                case 'conventional': ResultSuffix = '_CV'; break;
-                case 'magnetic': ResultSuffix = '_MG'; break;
-                case 'WeaponTech_T3': ResultSuffix = '_T3'; break;
-                case 'WeaponTech_T4': ResultSuffix = '_T4'; break;
-                case 'beam': ResultSuffix = '_BM'; break;
-            }
+            case 'conventional': ResultSuffix = '_CV'; break;
+            case 'magnetic': ResultSuffix = '_MG'; break;
+            case 'WeaponTech_T3': ResultSuffix = '_T3'; break;
+            case 'WeaponTech_T4': ResultSuffix = '_T4'; break;
+            case 'beam': ResultSuffix = '_BM'; break;
         }
     }
     else
     {
-// Vanilla fallback logic again
+        // Vanilla fallback logic again
         switch (WeaponTemplate.WeaponTech)
         {
             case 'conventional': ResultSuffix = '_CV'; break;
@@ -569,9 +535,12 @@ static function name GetWeaponBasedTech(XComGameState_Item ItemState, name weapo
             case 'beam': ResultSuffix = '_BM'; break;
         }
     }
-    return name(weaponName $ ResultSuffix);
-}
 
+    // Convert weaponName to string, concatenate, and convert back to name
+    weaponNameStr = string(weaponName);
+    resultStr = string(ResultSuffix);
+    return name(weaponNameStr $ resultStr);
+}
 static function ECharStatType StatNameToEnum(name StatName)
 {
     switch (StatName)
