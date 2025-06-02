@@ -415,20 +415,69 @@ class X2DLCInfo_TR_TakeThisGun extends X2DownloadableContentInfo;
 // Instructions:
 // https://www.reddit.com/r/xcom2mods/wiki/index/localization#wiki_abilitytagexpandhandler
 //
-// static function bool AbilityTagExpandHandler_CH(string InString, out string OutString, Object ParseObj, Object StrategyParseOb, XComGameState GameState)
-// {	
-// 	switch (InString)
-// 	{
-// 	case "YourUniqueTag":
-// 		OutString = YourDynamicValue;
-// 		return true;
-// 
-// 	default:
-// 		return false;
-// 	}
-// 
-// 	return false;
-// }
+static function bool AbilityTagExpandHandler_CH(string InString, out string OutString, Object ParseObj, Object StrategyParseOb, XComGameState GameState)
+{	
+	switch (InString)
+	{
+	case "TR_TakeThis_TechLevel":
+		OutString = YourDynamicValue;
+		return true;
+
+	default:
+		return false;
+	}
+
+	return false;
+}
+
+
+static function bool AbilityTagExpandHandler_CH(string InString, out string OutString, Object ParseObj, Object StrategyParseOb, XComGameState GameState)
+{
+    local XComGameState_Item ItemState;
+	local X2WeaponTemplate WeaponTemplate;
+	local XComGameState_Ability AbilityState, Ability;
+
+	switch (InString)
+	{
+    case "TR_TakeThis_TechLevel":
+	ItemState = Ability.GetSourceWeapon();
+		if (ItemState != none)
+		{
+            OutString = string(WeaponTemplate.WeaponTech);	return true;
+        }
+    case "TR_TakeThis_MobilityChange":
+    OutString = class'X2Ability_TR_TakeThis'.default.TR_TakeThis_MobilityChange; return true;
+
+    case "TR_TakeThis_WeaponName":
+        OutString = string(class'X2Ability_TR_TakeThis'.default.TR_TakeThis_ItemsToGive.Length > 0 ? class'X2Ability_TR_TakeThis'.default.TR_TakeThis_ItemsToGive[0] : "pistol");
+        return true;
+    case "TR_TakeThis_RangeTiles":
+        OutString = string(int(class'X2Ability_TR_TakeThis'.default.TR_TakeThis_Range / 8));
+        return true;
+    case "TR_TakeThis_AimChange":
+        OutString = string(class'X2Ability_TR_TakeThis'.default.TR_TakeThis_AimChange);
+        return true;
+    case "TR_TakeThis_SightChange":
+        OutString = string(class'X2Ability_TR_TakeThis'.default.TR_TakeThis_SightChange);
+        return true;
+    case "TR_TakeThis_DetectionRadiusChange":
+        OutString = string(class'X2Ability_TR_TakeThis'.default.TR_TakeThis_DetectionRadiusChange);
+        return true;
+    case "TR_TakeThis_MobilityChange":
+        OutString = string(class'X2Ability_TR_TakeThis'.default.TR_TakeThis_MobilityChange);
+        return true;
+    case "TR_TakeThis_ChargesDefault":
+        OutString = string(class'X2Ability_TR_TakeThis'.default.TR_TakeThis_ChargesDefault);
+        return true;
+
+	default:
+		return false;
+	}
+
+	return false;
+}
+
+
 
 // Purpose: helper function for AbilityTagExpandHandler_CH().
 // Use: to reduce the displayed number of decimals after the dot.
