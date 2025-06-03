@@ -1,8 +1,8 @@
 //---------------------------------------------------------------------------------------
 //  FILE:    X2Ability_TR_TakeThis.uc
 //  AUTHOR:  TRNEEDANAME  --  2025/05/09
-// DATE MODIFIED : 2025/05/10
-//  PURPOSE: Make the "You'll need this" perk, WOTC non LWOTC
+// DATE MODIFIED : 2025/05/20
+//  PURPOSE: Make the "You'll need this" perk from LW2 / LWOTC for WOTC
 // It devolved into madness fast
 //---------------------------------------------------------------------------------------
 
@@ -25,7 +25,7 @@ struct OfficerAbilitiesGivePerRank
 struct OfficerAbilitiesGivePerRankRand
 {
     var int rank;
-	var array<int> RandAbilitiesChance;
+    var array<int> RandAbilitiesChance;
     var array<name> abilities;
 };
 
@@ -40,7 +40,7 @@ struct native TR_TakeThisGun_AbilityStruct
     var  int APCost;              // Default: 1
     var  bool ConsumeAllAP;       // Default: false
     var  int Range;               // Default: 96
-	var name SlotName;
+    var name SlotName;
 
     // === Stat Modifications ===
     var  int AimChange;               // Default: 50
@@ -83,18 +83,18 @@ struct native TR_TakeThisGun_AbilityStruct
     var array<name> StdAbilityToAdd;
     var bool Has5Tier;
 
-	var bool GiveItems;
-	var array<name> ItemsToGive;
-	var array<name> SlotForItems;
+    var bool GiveItems;
+    var array<name> ItemsToGive;
+    var array<name> SlotForItems;
 
     // === Random Ability Assignment ===
     var bool RandAbilities;
     var int RandAbilitiesChance;
-	var array<name> RandAbilitiesToAdd;
+    var array<name> RandAbilitiesToAdd;
 
     // === Units to give the ability to ===
-	var bool GrantAbilityToClasses;
-	var array<name> Classes;
+    var bool GrantAbilityToClasses;
+    var array<name> Classes;
 
 
     structdefaultproperties
@@ -175,144 +175,144 @@ static function array<X2DataTemplate> CreateTemplates()
 
 static function X2AbilityTemplate AddPassSidearm()
 {
-	local X2AbilityTemplate                     Template;
-	local X2WeaponTemplate                      WeaponTemplate;
-	local X2AbilityCost_ActionPoints            ActionPointCost;
-	local X2Condition_UnitProperty              UnitPropertyCondition;
-	local X2AbilityTarget_Single                SingleTarget;
-	local X2AbilityCharges_TR_TakeThisCharge    Charges;
-	local X2AbilityCost_Charges                 ChargeCost;
-	local X2Condition_UnitInventory             TargetWeaponCondition;
-	local X2Effect_TR_TemporaryItem             TemporaryItemEffect;
-	local X2Effect_PersistentStatChange         StatEffect;
-	local X2Condition_AbilityProperty           ShooterAbilityCondition;
-	local NamePair                              StatPair;
-	local XComGameState_Item                    ItemState;
-	local XComGameState_Ability                 Ability;
-	local X2CharacterTemplateManager            CharMgr;
-	local X2CharacterTemplate                   CharacterTemplate;
-	local X2Effect_TR_AddRandomAbilities        RandAbilityEffect;
-	local name                                  ClassName;
-	local int									i, j, k;
-	// LWOTC
-	local int                                   OfficerRank;
-	
-	`CREATE_X2ABILITY_TEMPLATE(Template, 'TR_TakeThis');
-	Template.IconImage = "img:///UILibrary_LWOTC.LW_AbilityTakeThis";
-	Template.eAbilityIconBehaviorHUD = eAbilityIconBehavior_HideSpecificErrors;
-	Template.Hostility = eHostility_Neutral;
-	Template.AbilityToHitCalc = default.DeadEye;
-	Template.AbilitySourceName = 'eAbilitySource_Perk';
-	Template.AbilityTriggers.AddItem(default.PlayerInputTrigger);
-	Template.bDisplayInUITooltip = false;
+    local X2AbilityTemplate                     Template;
+    local X2WeaponTemplate                      WeaponTemplate;
+    local X2AbilityCost_ActionPoints            ActionPointCost;
+    local X2Condition_UnitProperty              UnitPropertyCondition;
+    local X2AbilityTarget_Single                SingleTarget;
+    local X2AbilityCharges_TR_TakeThisCharge    Charges;
+    local X2AbilityCost_Charges                 ChargeCost;
+    local X2Condition_UnitInventory             TargetWeaponCondition;
+    local X2Effect_TR_TemporaryItem             TemporaryItemEffect;
+    local X2Effect_PersistentStatChange         StatEffect;
+    local X2Condition_AbilityProperty           ShooterAbilityCondition;
+    local NamePair                              StatPair;
+    local XComGameState_Item                    ItemState;
+    local XComGameState_Ability                 Ability;
+    local X2CharacterTemplateManager            CharMgr;
+    local X2CharacterTemplate                   CharacterTemplate;
+    local X2Effect_TR_AddRandomAbilities        RandAbilityEffect;
+    local name                                  ClassName;
+    local int                                   i, j, k;
+    // LWOTC
+    local int                                   OfficerRank;
+
+    `CREATE_X2ABILITY_TEMPLATE(Template, 'TR_TakeThis');
+    Template.IconImage = "img:///UILibrary_LWOTC.LW_AbilityTakeThis";
+    Template.eAbilityIconBehaviorHUD = eAbilityIconBehavior_HideSpecificErrors;
+    Template.Hostility = eHostility_Neutral;
+    Template.AbilityToHitCalc = default.DeadEye;
+    Template.AbilitySourceName = 'eAbilitySource_Perk';
+    Template.AbilityTriggers.AddItem(default.PlayerInputTrigger);
+    Template.bDisplayInUITooltip = false;
     Template.bLimitTargetIcons = true;
 
-	SingleTarget = new class'X2AbilityTarget_Single';
-	SingleTarget.bIncludeSelf = false;
-	Template.AbilityTargetStyle = SingleTarget;
+    SingleTarget = new class'X2AbilityTarget_Single';
+    SingleTarget.bIncludeSelf = false;
+    Template.AbilityTargetStyle = SingleTarget;
 
-	ActionPointCost = new class'X2AbilityCost_ActionPoints';
+    ActionPointCost = new class'X2AbilityCost_ActionPoints';
     ActionPointCost.iNumPoints = default.TR_TakeThis_APCost;
-	ActionPointCost.bConsumeAllPoints = default.TR_TakeThis_ConsumeAllAP;
+    ActionPointCost.bConsumeAllPoints = default.TR_TakeThis_ConsumeAllAP;
     Template.AbilityCosts.AddItem(ActionPointCost);
 
-	Charges = new class'X2AbilityCharges_TR_TakeThisCharge';
+    Charges = new class'X2AbilityCharges_TR_TakeThisCharge';
     Charges.InitialCharges = default.TR_TakeThis_ChargesDefault;
     Charges.BonusAbility = default.TR_TakeThis_ChargesBonusAbility;
     Charges.BonusAbilityCharges =  default.TR_TakeThis_ChargesBonusAmount;
 
-	if (default.TR_TakeThis_ChargesBonusAllowAbilities)
-	{
-		foreach default.TR_TakeThis_ChargesBonusAbilities(StatPair)
-		{
-			Charges.BonusAbilityCharges += StatPair.value;
-		}
-	}
-	 Template.AbilityCharges = Charges;
+    if (default.TR_TakeThis_ChargesBonusAllowAbilities)
+    {
+        foreach default.TR_TakeThis_ChargesBonusAbilities(StatPair)
+        {
+            Charges.BonusAbilityCharges += StatPair.value;
+        }
+    }
+    Template.AbilityCharges = Charges;
 
-	if (default.TR_TakeThis_AddRandomAbilities)
-	{
-		RandAbilityEffect = new class'X2Effect_TR_AddRandomAbilities';
-		RandAbilityEffect.RandAbilities = default.TR_TakeThis_RandAbilitiesToAdd;
-		RandAbilityEffect.ChancePercent = default.TR_TakeThis_RandAbilitiesChance;
-		Template.AddTargetEffect(RandAbilityEffect);
-	}
+    if (default.TR_TakeThis_AddRandomAbilities)
+    {
+        RandAbilityEffect = new class'X2Effect_TR_AddRandomAbilities';
+        RandAbilityEffect.RandAbilities = default.TR_TakeThis_RandAbilitiesToAdd;
+        RandAbilityEffect.ChancePercent = default.TR_TakeThis_RandAbilitiesChance;
+        Template.AddTargetEffect(RandAbilityEffect);
+    }
 
-	// Items to give
-	if (default.TR_TakeThis_GiveItems)
-	{
-		for (j = 0; j < default.TR_TakeThis_ItemsToGive.Length; j++)
-		{
-			// Add the item
-			ItemState = new class'XComGameState_Item';
-			ItemState.ItemName = default.TR_TakeThis_ItemsToGive[j];
-			ItemState.Slot = SlotNameToInvSlot(default.TR_TakeThis_SlotForItems[j]);
-			TemporaryItemEffect.AddItem(ItemState);
-		}
-	}
+    // Items to give
+    if (default.TR_TakeThis_GiveItems)
+    {
+        for (j = 0; j < default.TR_TakeThis_ItemsToGive.Length; j++)
+        {
+            // Add the item
+            ItemState = new class'XComGameState_Item';
+            ItemState.ItemName = default.TR_TakeThis_ItemsToGive[j];
+            ItemState.Slot = SlotNameToInvSlot(default.TR_TakeThis_SlotForItems[j]);
+            TemporaryItemEffect.AddItem(ItemState);
+        }
+    }
 
-	ChargeCost = new class'X2AbilityCost_Charges';
-	ChargeCost.NumCharges = default.TR_TakeThis_ChargeCost;
-	Template.AbilityCosts.AddItem(ChargeCost);
+    ChargeCost = new class'X2AbilityCost_Charges';
+    ChargeCost.NumCharges = default.TR_TakeThis_ChargeCost;
+    Template.AbilityCosts.AddItem(ChargeCost);
 
-	Template.HideErrors.AddItem('AA_CannotAfford_Charges');
+    Template.HideErrors.AddItem('AA_CannotAfford_Charges');
 
-	Template.AddShooterEffectExclusions();
+    Template.AddShooterEffectExclusions();
 
-	UnitPropertyCondition = new class'X2Condition_UnitProperty';
+    UnitPropertyCondition = new class'X2Condition_UnitProperty';
 
     UnitPropertyCondition.ExcludeDead = default.TR_TakeThis_ExcludeDead;
     UnitPropertyCondition.ExcludeHostileToSource = default.TR_TakeThis_ExcludeHostileToSource;
     UnitPropertyCondition.ExcludeFriendlyToSource = default.TR_TakeThis_ExcludeFriendlyToSource;
-	UnitPropertyCondition.FailOnNonUnits = default.TR_TakeThis_FailOnNonUnits;
-	UnitPropertyCondition.ExcludeAlien = default.TR_TakeThis_ExcludeAlien;
-	UnitPropertyCondition.ExcludeRobotic = default.TR_TakeThis_ExcludeRobotic;
-	UnitPropertyCondition.RequireWithinRange = default.TR_TakeThis_RequireWithinRange;
-	UnitPropertyCondition.IsPlayerControlled = default.TR_TakeThis_IsPlayerControlled;
-	UnitPropertyCondition.IsImpaired = default.TR_TakeThis_IsImpaired; // false
-	UnitPropertyCondition.RequireSquadmates = default.TR_TakeThis_RequireSquadmates;
-	UnitPropertyCondition.ExcludeNonCivilian = default.TR_TakeThis_ExcludeNonCivilian;
-	UnitPropertyCondition.WithinRange = default.TR_TakeThis_Range;	// 96 = 1 adjacent tile
-	Template.AbilityTargetConditions.AddItem(UnitPropertyCondition);
+    UnitPropertyCondition.FailOnNonUnits = default.TR_TakeThis_FailOnNonUnits;
+    UnitPropertyCondition.ExcludeAlien = default.TR_TakeThis_ExcludeAlien;
+    UnitPropertyCondition.ExcludeRobotic = default.TR_TakeThis_ExcludeRobotic;
+    UnitPropertyCondition.RequireWithinRange = default.TR_TakeThis_RequireWithinRange;
+    UnitPropertyCondition.IsPlayerControlled = default.TR_TakeThis_IsPlayerControlled;
+    UnitPropertyCondition.IsImpaired = default.TR_TakeThis_IsImpaired; // false
+    UnitPropertyCondition.RequireSquadmates = default.TR_TakeThis_RequireSquadmates;
+    UnitPropertyCondition.ExcludeNonCivilian = default.TR_TakeThis_ExcludeNonCivilian;
+    UnitPropertyCondition.WithinRange = default.TR_TakeThis_Range; // 96 = 1 adjacent tile
+    Template.AbilityTargetConditions.AddItem(UnitPropertyCondition);
 
-	ShooterAbilityCondition = new class'X2Condition_AbilityProperty';
-	ShooterAbilityCondition.OwnerHasSoldierAbilities.AddItem ('PistolStandardShot');
-	ShooterAbilityCondition.TargetMustBeInValidTiles = false;
-	Template.AbilityShooterConditions.AddItem(ShooterAbilityCondition);
+    ShooterAbilityCondition = new class'X2Condition_AbilityProperty';
+    ShooterAbilityCondition.OwnerHasSoldierAbilities.AddItem ('PistolStandardShot');
+    ShooterAbilityCondition.TargetMustBeInValidTiles = false;
+    Template.AbilityShooterConditions.AddItem(ShooterAbilityCondition);
 
-	TargetWeaponCondition = new class 'X2Condition_UnitInventory';
-	TargetWeaponCondition.ExcludeWeaponCategory = 'pistol';
-	TargetWeaponCondition.RelevantSlot = eInvSlot_Utility;
-	Template.AbilityTargetConditions.AddItem (TargetWeaponCondition);
+    TargetWeaponCondition = new class 'X2Condition_UnitInventory';
+    TargetWeaponCondition.ExcludeWeaponCategory = 'pistol';
+    TargetWeaponCondition.RelevantSlot = eInvSlot_Utility;
+    Template.AbilityTargetConditions.AddItem (TargetWeaponCondition);
 
-	ItemState = Ability.GetSourceWeapon();
+    ItemState = Ability.GetSourceWeapon();
 
-	TemporaryItemEffect = new class'X2Effect_TR_TemporaryItem';
-	TemporaryItemEffect.EffectName = 'TakeThisEffect';
-	TemporaryItemEffect.ItemName = GetWeaponBasedTech(ItemState, 'pistol', 'pistol', true);
-	TemporaryItemEffect.bIgnoreItemEquipRestrictions = true;
-	TemporaryItemEffect.BuildPersistentEffect(1, true, false);
-	TemporaryItemEffect.DuplicateResponse = eDupe_Ignore;
-	Template.AddTargetEffect(TemporaryItemEffect);
+    TemporaryItemEffect = new class'X2Effect_TR_TemporaryItem';
+    TemporaryItemEffect.EffectName = 'TakeThisEffect';
+    TemporaryItemEffect.ItemName = GetWeaponBasedTech(ItemState, 'pistol', 'pistol', true);
+    TemporaryItemEffect.bIgnoreItemEquipRestrictions = true;
+    TemporaryItemEffect.BuildPersistentEffect(1, true, false);
+    TemporaryItemEffect.DuplicateResponse = eDupe_Ignore;
+    Template.AddTargetEffect(TemporaryItemEffect);
 
-	// Grant to class
-	if (default.TR_TakeThis_GrantAbilityToClass)
-	{
-		CharMgr = class'X2CharacterTemplateManager'.static.GetCharacterTemplateManager();
+    // Grant to class
+    if (default.TR_TakeThis_GrantAbilityToClass)
+    {
+        CharMgr = class'X2CharacterTemplateManager'.static.GetCharacterTemplateManager();
 
-		for (i = 0; i < default.TR_TakeThis_Classes.Length; i++)
-		{
-			ClassName = default.TR_TakeThis_Classes[i];
-			CharacterTemplate = CharMgr.FindCharacterTemplate(ClassName);
+        for (i = 0; i < default.TR_TakeThis_Classes.Length; i++)
+        {
+            ClassName = default.TR_TakeThis_Classes[i];
+            CharacterTemplate = CharMgr.FindCharacterTemplate(ClassName);
 
-			if (CharacterTemplate != none)
-			{
-				CharacterTemplate.Abilities.AddItem('TR_TakeThis');
-			}
-		}
-	}
+            if (CharacterTemplate != none)
+            {
+                CharacterTemplate.Abilities.AddItem('TR_TakeThis');
+            }
+        }
+    }
 
-	// LWOTC 
+	// LWOTC
 	if (class'Help'.static.IsModActive('LongWarOfTheChosen'))
 	{
 		// We get current officer
@@ -320,7 +320,7 @@ static function X2AbilityTemplate AddPassSidearm()
 	    local XComGameState_Unit TargetUnit;
 		local XComGameState_Unit_LWOfficer OfficerComp;
 
-		OfficerComp = GetOfficerComponent(Unit);
+OfficerComp = GetOfficerComponent(Unit);
 		if (OfficerComp != none)
 		{
 			OfficerRank = OfficerComp.GetOfficerRank();
@@ -328,16 +328,16 @@ static function X2AbilityTemplate AddPassSidearm()
 
 		if (AbilityConfig.OfficerGrantAbilities)
 		{
-			if (AbilityConfig.OfficerGrantAbilitiesRNG && AbilityConfig.OfficerAbilitiesGivePerRankRand.Rank == OfficerRank)
-			{
-				for (k = 0; k < AbilityConfig.OfficerAbilitiesGivePerRankRand.Length; k++)
-				{
-					RandAbilityEffect = new class'X2Effect_TR_AddRandomAbilities';
-					RandAbilityEffect.RandAbilities = AbilityConfig.OfficerAbilitiesGivePerRankRand[k].abilities;
-					RandAbilityEffect.ChancePercent = AbilityConfig.OfficerAbilitiesGivePerRankRand[k].RandAbilitiesChance;
-					Template.AddTargetEffect(RandAbilityEffect);
-				}
-			}
+            if (AbilityConfig.OfficerGrantAbilitiesRNG && AbilityConfig.OfficerAbilitiesGivePerRankRand.Rank == OfficerRank)
+            {
+                for (k = 0; k < AbilityConfig.OfficerAbilitiesGivePerRankRand.Length; k++)
+                {
+                    RandAbilityEffect = new class'X2Effect_TR_AddRandomAbilities';
+                    RandAbilityEffect.RandAbilities = AbilityConfig.OfficerAbilitiesGivePerRankRand[k].abilities;
+                    RandAbilityEffect.ChancePercent = AbilityConfig.OfficerAbilitiesGivePerRankRand[k].RandAbilitiesChance;
+                    Template.AddTargetEffect(RandAbilityEffect);
+                }
+            }
 
 			else if (AbilityConfig.OfficerAbilitiesGivePerRank.Rank == OfficerRank)
 			{
@@ -395,7 +395,7 @@ static function X2AbilityTemplate TR_TakeThisGun_Abilities(TR_TakeThisGun_Abilit
 	local name                                  ClassName;
 	local bool                                  bAlreadyHasAbility;
 	local int                                   i, j, k;
-	
+
 	`CREATE_X2ABILITY_TEMPLATE(Template, AbilityConfig.TemplateName);
 
 	Template.IconImage = "img:///UILibrary_LWOTC.LW_AbilityTakeThis";
@@ -506,76 +506,76 @@ static function X2AbilityTemplate TR_TakeThisGun_Abilities(TR_TakeThisGun_Abilit
 			ItemState.Slot = SlotNameToInvSlot(AbilityConfig.SlotForItems[k]);
 			TemporaryItemEffect.AddItem(ItemState);
 		}
-	}
+    }
 
-	// Abilities are added via RNGesus
-	if (AbilityConfig.RandAbilities)
-	{
-		RandAbilityEffect = new class'X2Effect_TR_AddRandomAbilities';
-		RandAbilityEffect.RandAbilities = AbilityConfig.RandAbilitiesToAdd;
-		RandAbilityEffect.ChancePercent = AbilityConfig.RandAbilitiesChance;
-		Template.AddTargetEffect(RandAbilityEffect);
-	}
+    // Abilities are added via RNGesus
+    if (AbilityConfig.RandAbilities)
+    {
+        RandAbilityEffect = new class'X2Effect_TR_AddRandomAbilities';
+        RandAbilityEffect.RandAbilities = AbilityConfig.RandAbilitiesToAdd;
+        RandAbilityEffect.ChancePercent = AbilityConfig.RandAbilitiesChance;
+        Template.AddTargetEffect(RandAbilityEffect);
+    }
 
-	if (AbilityConfig.GrantAbilityToClasses)
-	{
-		CharMgr = class'X2CharacterTemplateManager'.static.GetCharacterTemplateManager();
+    if (AbilityConfig.GrantAbilityToClasses)
+    {
+        CharMgr = class'X2CharacterTemplateManager'.static.GetCharacterTemplateManager();
 
-		for (i = 0; i < AbilityConfig.Classes.Length; i++)
-		{
-			ClassName = AbilityConfig.Classes[i];
-			CharacterTemplate = CharMgr.FindCharacterTemplate(ClassName);
+        for (i = 0; i < AbilityConfig.Classes.Length; i++)
+        {
+            ClassName = AbilityConfig.Classes[i];
+            CharacterTemplate = CharMgr.FindCharacterTemplate(ClassName);
 
-			if (CharacterTemplate != none)
-			{
-				bAlreadyHasAbility = false;
+            if (CharacterTemplate != none)
+            {
+                bAlreadyHasAbility = false;
 
-				for (j = 0; j < CharacterTemplate.Abilities.Length; j++)
-				{
-					if (CharacterTemplate.Abilities[j] == AbilityConfig.TemplateName)
-					{
-						bAlreadyHasAbility = true;
-						break;
-					}
-				}
+                for (j = 0; j < CharacterTemplate.Abilities.Length; j++)
+                {
+                    if (CharacterTemplate.Abilities[j] == AbilityConfig.TemplateName)
+                    {
+                        bAlreadyHasAbility = true;
+                        break;
+                    }
+                }
 
-				if (!bAlreadyHasAbility)
-				{
-					CharacterTemplate.Abilities.AddItem(AbilityConfig.TemplateName);
-				}
-			}
-			else
-			{
-				`LOG("TR_TakeThisGun_Abilities ERROR: Could not find class template for " $ ClassName,, 'XCom_Gameplay');
-			}
-		}
-	}
+                if (!bAlreadyHasAbility)
+                {
+                    CharacterTemplate.Abilities.AddItem(AbilityConfig.TemplateName);
+                }
+            }
+            else
+            {
+                `LOG("TR_TakeThisGun_Abilities ERROR: Could not find class template for " $ ClassName,, 'XCom_Gameplay');
+            }
+        }
+    }
 
 
-	StatEffect = new class 'X2Effect_PersistentStatChange';
-	StatEffect.AddPersistentStatChange (eStat_Offense, AbilityConfig.AimChange); // 50 by default
-	StatEffect.AddPersistentStatChange (eStat_SightRadius, AbilityConfig.SightChange); // 15 by default
-	StatEffect.AddPersistentStatChange (eStat_DetectionRadius, AbilityConfig.DetectionRadiusChange); // 9 by default
-	StatEffect.AddPersistentStatChange (eStat_Mobility, AbilityConfig.MobilityChange); // -1 by default
+    StatEffect = new class 'X2Effect_PersistentStatChange';
+    StatEffect.AddPersistentStatChange (eStat_Offense, AbilityConfig.AimChange); // 50 by default
+    StatEffect.AddPersistentStatChange (eStat_SightRadius, AbilityConfig.SightChange); // 15 by default
+    StatEffect.AddPersistentStatChange (eStat_DetectionRadius, AbilityConfig.DetectionRadiusChange); // 9 by default
+    StatEffect.AddPersistentStatChange (eStat_Mobility, AbilityConfig.MobilityChange); // -1 by default
 
-	foreach AbilityConfig.ExtraStats(StatPair)
-	{
-		StatEffect.AddPersistentStatChange(StatNameToEnum(StatPair.name), StatPair.value);
-	}
+    foreach AbilityConfig.ExtraStats(StatPair)
+    {
+        StatEffect.AddPersistentStatChange(StatNameToEnum(StatPair.name), StatPair.value);
+    }
 
-	StatEffect.BuildPersistentEffect (1, true, false, false);
-	StatEffect.SetDisplayInfo(ePerkBuff_Passive, class'X2TacticalGameRulesetDataStructures'.default.m_aCharStatLabels[eStat_Offense], Template.GetMyLongDescription(), Template.IconImage, false);
-	Template.AddTargetEffect(StatEffect);
+    StatEffect.BuildPersistentEffect (1, true, false, false);
+    StatEffect.SetDisplayInfo(ePerkBuff_Passive, class'X2TacticalGameRulesetDataStructures'.default.m_aCharStatLabels[eStat_Offense], Template.GetMyLongDescription(), Template.IconImage, false);
+    Template.AddTargetEffect(StatEffect);
 
-	Template.bShowActivation = true;
-	Template.bSkipFireAction = true;
-	Template.CustomFireAnim = 'HL_SignalBark';
-	Template.ActivationSpeech = 'HoldTheLine';
+    Template.bShowActivation = true;
+    Template.bSkipFireAction = true;
+    Template.CustomFireAnim = 'HL_SignalBark';
+    Template.ActivationSpeech = 'HoldTheLine';
 
-	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
-	Template.BuildVisualizationFn = TypicalAbility_BuildVisualization;
+    Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+    Template.BuildVisualizationFn = TypicalAbility_BuildVisualization;
 
-	return Template;
+    return Template;
 }
 
 static function name GetWeaponBasedTech(XComGameState_Item ItemState, name weaponType, name weaponName, bool has5Tier)
@@ -585,12 +585,12 @@ static function name GetWeaponBasedTech(XComGameState_Item ItemState, name weapo
     local string weaponNameStr;
     local string resultStr;
 
-	if (ItemState == none)
-	{
-		return '';
-	}
+    if (ItemState == none)
+    {
+        return '';
+    }
  
-	WeaponTemplate = X2WeaponTemplate(ItemState.GetMyTemplate());
+    WeaponTemplate = X2WeaponTemplate(ItemState.GetMyTemplate());
 
     // If weapon category doesn't match, fallback to vanilla logic
     switch (WeaponTemplate.WeaponCat)
