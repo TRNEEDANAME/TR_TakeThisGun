@@ -16,7 +16,6 @@ struct TablePair
     var int value;
 };
 
-<<<<<<< HEAD
 struct OfficerAbilitiesGivePerRank
 {
     var int rank;
@@ -104,8 +103,6 @@ struct native TR_TakeThisGun_AbilityStruct
     }
 };
 
-=======
->>>>>>> c906bacb099fd1ef9c20d930389514ae361b164d
 // Default ability stuff
 var config int TR_TakeThis_APCost; // 1 by default
 var config bool TR_TakeThis_ConsumeAllAP; // false by default
