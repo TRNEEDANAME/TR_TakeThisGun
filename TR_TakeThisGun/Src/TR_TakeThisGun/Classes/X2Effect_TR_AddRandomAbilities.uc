@@ -7,7 +7,7 @@
 
 class X2Effect_TR_AddRandomAbilities extends X2Effect;
 
-var array<name> RandAbilities;
+var array RandAbilities;
 var int ChancePercent;
 
 simulated function TR_ApplyEffect(XComGameState_Effect EffectGameState, const out EffectAppliedData AppliedData)
@@ -26,12 +26,9 @@ simulated function TR_ApplyEffect(XComGameState_Effect EffectGameState, const ou
 		return;
 
 	// Add abilities with random chance
-	for (i = 0; i < RandAbilities.Length; i++)
-	{
 		RandRoll = `SYNC_RAND(100);
 		if (RandRoll < ChancePercent)
 		{
-			WeaponTemplate.Abilities.AddItem(RandAbilities[i]);
+			WeaponTemplate.Abilities.AddItem(RandAbilities);
 		}
-	}
 }
