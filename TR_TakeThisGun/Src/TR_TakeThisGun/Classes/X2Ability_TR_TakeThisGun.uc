@@ -1,5 +1,11 @@
 class X2Ability_TR_TakeThisGun extends X2Ability config(TR_TakeThis);
 
+struct TablePair
+{
+	var name name;
+	var int value;
+};
+
 struct OfficerAbilitiesGivePerRank
 {
     var int rank;
@@ -120,8 +126,8 @@ static function array<X2DataTemplate> CreateTemplates()
     local array<X2DataTemplate> Templates;
     local TR_TakeThisGun_AbilityStruct AbilityConfig;
 
-// Just for fun
-// I used Create Immunity abilities as a base
+	// Just for fun
+	// I used Create Immunity abilities as a base
     foreach default.Abilities(AbilityConfig)
     {
         Templates.AddItem(TR_TakeThisGun_Abilities(AbilityConfig));
@@ -133,208 +139,230 @@ static function array<X2DataTemplate> CreateTemplates()
 
 static function X2AbilityTemplate TR_TakeThisGun_Abilities(TR_TakeThisGun_AbilityStruct AbilityConfig)
 {
-	local X2AbilityTemplate						Template;
-	local X2WeaponTemplate                      WeaponTemplate;
-	local X2AbilityCost_ActionPoints			ActionPointCost;
-	local X2Condition_UnitProperty				UnitPropertyCondition;
-	local X2AbilityTarget_Single				SingleTarget;
-	local X2AbilityCharges_TR_TakeThisCharge	Charges;
-	local X2AbilityCost_Charges					ChargeCost;
-	local X2Condition_UnitInventory				TargetWeaponCondition;
-	local X2Effect_TR_TemporaryItem				TemporaryItemEffect;
-	local X2Effect_PersistentStatChange			StatEffect;
-	local X2Effect_TR_AddRandomAbilities        RandAbilityEffect;
-	local X2Condition_AbilityProperty			ShooterAbilityCondition;
-	local TablePair                              StatPair;
-	local XComGameState_Item                    ItemState;
-	local XComGameStateContext_Ability          AbilityContext;
-	local XComGameStateContext_Ability          Context;
-	local X2CharacterTemplateManager            CharMgr;
-	local X2CharacterTemplate                   CharacterTemplate;
-	local name                                  ClassName;
-	local bool                                  bAlreadyHasAbility;
-	local int                                   i, j, k;
-	
-	`CREATE_X2ABILITY_TEMPLATE(Template, AbilityConfig.TemplateName);
+    local X2AbilityTemplate Template;
+    local X2AbilityCost_ActionPoints ActionPointCost;
+    local X2AbilityCharges_TR_TakeThisCharge Charges;
+    local X2AbilityCost_Charges ChargeCost;
+    local X2Condition_UnitProperty UnitPropertyCondition;
+    local X2AbilityTarget_Single SingleTarget;
+    local X2Condition_AbilityProperty ShooterAbilityCondition;
+    local X2Condition_UnitInventory TargetWeaponCondition;
+    local X2Effect_TR_TemporaryItem TemporaryItemEffect;
+    local X2Effect_PersistentStatChange StatEffect;
+    local TablePair StatPair;
+    local int i, k;
+	local string StatDesc;
+	local string StatNameStr;
 
-	Template.IconImage = "img:///UILibrary_LWOTC.LW_AbilityTakeThis";
-	Template.eAbilityIconBehaviorHUD = eAbilityIconBehavior_HideSpecificErrors;
-	Template.Hostility = eHostility_Neutral;
-	Template.AbilityToHitCalc = default.DeadEye;
-	Template.AbilitySourceName = 'eAbilitySource_Perk';
-	Template.AbilityTriggers.AddItem(default.PlayerInputTrigger);
-	Template.bDisplayInUITooltip = false;
+
+    `CREATE_X2ABILITY_TEMPLATE(Template, AbilityConfig.Meta.TemplateName);
+
+    Template.IconImage = AbilityConfig.Meta.IconPath;
+    Template.eAbilityIconBehaviorHUD = eAbilityIconBehavior_HideSpecificErrors;
+    Template.Hostility = eHostility_Neutral;
+    Template.AbilityToHitCalc = default.DeadEye;
+    Template.AbilitySourceName = 'eAbilitySource_Perk';
+    Template.AbilityTriggers.AddItem(default.PlayerInputTrigger);
+    Template.bDisplayInUITooltip = false;
     Template.bLimitTargetIcons = true;
 
-	SingleTarget = new class'X2AbilityTarget_Single';
-	SingleTarget.bIncludeSelf = false;
-	Template.AbilityTargetStyle = SingleTarget;
+    // Target style
+    SingleTarget = new class'X2AbilityTarget_Single';
+    SingleTarget.bIncludeSelf = false;
+    Template.AbilityTargetStyle = SingleTarget;
 
-	ActionPointCost = new class'X2AbilityCost_ActionPoints';
-    ActionPointCost.iNumPoints = AbilityConfig.APCost;
-	ActionPointCost.bConsumeAllPoints = AbilityConfig.ConsumeAllAP;
+    // Action Point Cost
+    ActionPointCost = new class'X2AbilityCost_ActionPoints';
+    ActionPointCost.iNumPoints = AbilityConfig.ActionPoints.APCost;
+    ActionPointCost.bConsumeAllPoints = AbilityConfig.ActionPoints.ConsumeAllAP;
     Template.AbilityCosts.AddItem(ActionPointCost);
 
-    Charges.InitialCharges = AbilityConfig.ChargesDefault;
-    Charges.BonusAbility = AbilityConfig.ChargesBonusAbility;
-    Charges.BonusAbilityCharges =  AbilityConfig.ChargeBonusAmount;
+    // Charges
+    Charges = new class'X2AbilityCharges_TR_TakeThisCharge';
+    Charges.InitialCharges = AbilityConfig.Charges.ChargesDefault;
+    Charges.BonusAbility = AbilityConfig.Charges.ChargesBonusAbility;
+    Charges.BonusAbilityCharges = AbilityConfig.Charges.ChargeBonusAmount;
+    if (AbilityConfig.Charges.ChargesBonusAllowAbilities)
+    {
+        foreach AbilityConfig.Charges.ChargesBonusAbilities(StatPair)
+        {
+            Charges.BonusAbilityCharges += StatPair.value;
+        }
+    }
+    Template.AbilityCharges = Charges;
 
-	if (AbilityConfig.ChargesBonusAllowAbilities)
+    // Charge Cost
+    ChargeCost = new class'X2AbilityCost_Charges';
+    ChargeCost.NumCharges = AbilityConfig.Charges.ChargeCost;
+    Template.AbilityCosts.AddItem(ChargeCost);
+
+    Template.HideErrors.AddItem('AA_CannotAfford_Charges');
+    Template.AddShooterEffectExclusions();
+
+    // Targeting Conditions
+    UnitPropertyCondition = new class'X2Condition_UnitProperty';
+    UnitPropertyCondition.ExcludeDead = AbilityConfig.Targeting.ExcludeDead;
+    UnitPropertyCondition.ExcludeHostileToSource = AbilityConfig.Targeting.ExcludeHostileToSource;
+    UnitPropertyCondition.ExcludeFriendlyToSource = AbilityConfig.Targeting.ExcludeFriendlyToSource;
+    UnitPropertyCondition.FailOnNonUnits = AbilityConfig.Targeting.FailOnNonUnits;
+    UnitPropertyCondition.ExcludeAlien = AbilityConfig.Targeting.ExcludeAlien;
+    UnitPropertyCondition.ExcludeRobotic = AbilityConfig.Targeting.ExcludeRobotic;
+    UnitPropertyCondition.RequireWithinRange = AbilityConfig.Targeting.RequireWithinRange;
+    UnitPropertyCondition.IsPlayerControlled = AbilityConfig.Targeting.IsPlayerControlled;
+    UnitPropertyCondition.IsImpaired = AbilityConfig.Targeting.IsImpaired;
+    UnitPropertyCondition.RequireSquadmates = AbilityConfig.Targeting.RequireSquadmates;
+    UnitPropertyCondition.ExcludeNonCivilian = AbilityConfig.Targeting.ExcludeNonCivilian;
+    UnitPropertyCondition.WithinRange = AbilityConfig.ActionPoints.Range;
+    Template.AbilityTargetConditions.AddItem(UnitPropertyCondition);
+
+    // Shooter Ability Condition
+    ShooterAbilityCondition = new class'X2Condition_AbilityProperty';
+    ShooterAbilityCondition.OwnerHasSoldierAbilities.AddItem(AbilityConfig.WeaponSpec.OwnerAbilityToCheck);
+    ShooterAbilityCondition.TargetMustBeInValidTiles = false;
+    Template.AbilityShooterConditions.AddItem(ShooterAbilityCondition);
+
+    // Target Weapon Condition
+    TargetWeaponCondition = new class'X2Condition_UnitInventory';
+    TargetWeaponCondition.ExcludeWeaponCategory = AbilityConfig.WeaponSpec.WeaponType;
+    TargetWeaponCondition.RelevantSlot = SlotNameToInvSlot(AbilityConfig.ActionPoints.SlotName);
+    Template.AbilityTargetConditions.AddItem(TargetWeaponCondition);
+
+    // Temporary Item Effect
+    TemporaryItemEffect = new class'X2Effect_TR_TemporaryItem';
+    TemporaryItemEffect.EffectName = 'TakeThisEffect';
+    TemporaryItemEffect.ItemName = GetWeaponBasedTech(
+        none, // You may want to pass the actual ItemState here if available
+        AbilityConfig.WeaponSpec.WeaponType,
+        AbilityConfig.WeaponSpec.WeaponName,
+        AbilityConfig.WeaponSpec.Has5Tier
+    );
+    TemporaryItemEffect.bIgnoreItemEquipRestrictions = true;
+    TemporaryItemEffect.BuildPersistentEffect(1, true, false);
+    TemporaryItemEffect.DuplicateResponse = eDupe_Ignore;
+    Template.AddTargetEffect(TemporaryItemEffect);
+
+    // Give Items
+    if (AbilityConfig.WeaponSpec.GiveItems)
+    {
+        for (k = 0; k < AbilityConfig.WeaponSpec.ItemsToGive.Length; k++)
+        {
+            local XComGameState_Item ItemState;
+            ItemState = new class'XComGameState_Item';
+            ItemState.ItemName = AbilityConfig.WeaponSpec.ItemsToGive[k];
+            ItemState.Slot = SlotNameToInvSlot(AbilityConfig.WeaponSpec.SlotForItems[k]);
+            TemporaryItemEffect.AddItem(ItemState);
+        }
+    }
+
+    // Random Abilities
+    if (AbilityConfig.Random.RandAbilities)
+    {
+        RandAbilityEffect = new class'X2Effect_TR_AddRandomAbilities';
+        RandAbilityEffect.RandAbilities = AbilityConfig.Random.RandAbilitiesToAdd;
+        RandAbilityEffect.ChancePercent = AbilityConfig.Random.RandAbilitiesChance;
+        Template.AddTargetEffect(RandAbilityEffect);
+    }
+
+    // Grant to Classes
+    if (AbilityConfig.ClassGrant.GrantAbilityToClasses)
+    {
+        local X2CharacterTemplateManager CharMgr;
+        local X2CharacterTemplate CharacterTemplate;
+        local name ClassName;
+        local bool bAlreadyHasAbility;
+        local int j;
+
+        CharMgr = class'X2CharacterTemplateManager'.static.GetCharacterTemplateManager();
+        for (i = 0; i < AbilityConfig.ClassGrant.Classes.Length; i++)
+        {
+            ClassName = AbilityConfig.ClassGrant.Classes[i];
+            CharacterTemplate = CharMgr.FindCharacterTemplate(ClassName);
+
+            if (CharacterTemplate != none)
+            {
+                bAlreadyHasAbility = false;
+                for (j = 0; j < CharacterTemplate.Abilities.Length; j++)
+                {
+                    if (CharacterTemplate.Abilities[j] == AbilityConfig.Meta.TemplateName)
+                    {
+                        bAlreadyHasAbility = true;
+                        break;
+                    }
+                }
+                if (!bAlreadyHasAbility)
+                {
+                    CharacterTemplate.Abilities.AddItem(AbilityConfig.Meta.TemplateName);
+                }
+            }
+            else
+            {
+                `LOG("TR_TakeThisGun_Abilities ERROR: Could not find class template for " $ ClassName,, 'XCom_Gameplay');
+            }
+        }
+    }
+
+    // Stat Effects
+    StatEffect = new class 'X2Effect_PersistentStatChange';
+    StatEffect.AddPersistentStatChange(eStat_Offense, AbilityConfig.Stats.AimChange);
+    StatEffect.AddPersistentStatChange(eStat_SightRadius, AbilityConfig.Stats.SightChange);
+    StatEffect.AddPersistentStatChange(eStat_DetectionRadius, AbilityConfig.Stats.DetectionRadiusChange);
+    StatEffect.AddPersistentStatChange(eStat_Mobility, AbilityConfig.Stats.MobilityChange);
+    foreach AbilityConfig.Stats.ExtraStats(StatPair)
+    {
+        StatEffect.AddPersistentStatChange(StatNameToEnum(StatPair.name), StatPair.value);
+    }
+    StatEffect.BuildPersistentEffect(1, true, false, false);
+
+	// Build a description string for all stat changes
+	StatDesc = "";
+	if (AbilityConfig.Stats.AimChange != 0)
 	{
-		foreach AbilityConfig.ChargesBonusAbilities(StatPair)
-		{
-			Charges.BonusAbilityCharges += StatPair.value;
-		}
+	    StatDesc $= string(AbilityConfig.Stats.AimChange) $ " " $ class'X2TacticalGameRulesetDataStructures'.default.m_aCharStatLabels[eStat_Offense] $ ", ";
+	}
+	if (AbilityConfig.Stats.SightChange != 0)
+	{
+	    StatDesc $= string(AbilityConfig.Stats.SightChange) $ " " $ class'X2TacticalGameRulesetDataStructures'.default.m_aCharStatLabels[eStat_SightRadius] $ ", ";
+	}
+	if (AbilityConfig.Stats.DetectionRadiusChange != 0)
+	{
+	    StatDesc $= string(AbilityConfig.Stats.DetectionRadiusChange) $ " " $ class'X2TacticalGameRulesetDataStructures'.default.m_aCharStatLabels[eStat_DetectionRadius] $ ", ";
+	}
+	if (AbilityConfig.Stats.MobilityChange != 0)
+	{
+	    StatDesc $= string(AbilityConfig.Stats.MobilityChange) $ " " $ class'X2TacticalGameRulesetDataStructures'.default.m_aCharStatLabels[eStat_Mobility] $ ", ";
 	}
 
-	ChargeCost = new class'X2AbilityCost_Charges';
-	ChargeCost.NumCharges = AbilityConfig.ChargeCost;
-	Template.AbilityCosts.AddItem(ChargeCost);
-
-	Template.HideErrors.AddItem('AA_CannotAfford_Charges');
-
-	Template.AddShooterEffectExclusions();
-
-	UnitPropertyCondition = new class'X2Condition_UnitProperty';
-	if(AbilityConfig.ChangeAbilityUnitCondition)
+	// Add extra stats from the array
+	foreach AbilityConfig.Stats.ExtraStats(StatPair)
 	{
-		UnitPropertyCondition.ExcludeDead = AbilityConfig.ExcludeDead;
-		UnitPropertyCondition.ExcludeHostileToSource = AbilityConfig.ExcludeHostileToSource;
-		UnitPropertyCondition.ExcludeFriendlyToSource = AbilityConfig.ExcludeFriendlyToSource;
-		UnitPropertyCondition.FailOnNonUnits = AbilityConfig.FailOnNonUnits;
-		UnitPropertyCondition.ExcludeAlien = AbilityConfig.ExcludeAlien;
-		UnitPropertyCondition.ExcludeRobotic = AbilityConfig.ExcludeRobotic;
-		UnitPropertyCondition.RequireWithinRange = AbilityConfig.RequireWithinRange;
-		UnitPropertyCondition.IsPlayerControlled = AbilityConfig.IsPlayerControlled;
-		UnitPropertyCondition.IsImpaired = AbilityConfig.IsImpaired; // false
-		UnitPropertyCondition.RequireSquadmates = AbilityConfig.RequireSquadmates;
-		UnitPropertyCondition.ExcludeNonCivilian = AbilityConfig.ExcludeNonCivilian;
-	}
-	else
-	{
-		UnitPropertyCondition.ExcludeDead = true;
-		UnitPropertyCondition.ExcludeHostileToSource = true;
-		UnitPropertyCondition.ExcludeFriendlyToSource = false;
-		UnitPropertyCondition.FailOnNonUnits = true;
-		UnitPropertyCondition.ExcludeAlien = true;
-		UnitPropertyCondition.ExcludeRobotic = true;
-		UnitPropertyCondition.RequireWithinRange = true;
-		UnitPropertyCondition.IsPlayerControlled = true;
-		UnitPropertyCondition.IsImpaired = false;
-		UnitPropertyCondition.RequireSquadmates = true;
-		UnitPropertyCondition.ExcludeNonCivilian = true;
+	    StatNameStr = class'X2TacticalGameRulesetDataStructures'.default.m_aCharStatLabels[StatNameToEnum(StatPair.name)];
+	    StatDesc $= string(StatPair.value) $ " " $ StatNameStr $ ", ";
 	}
 
-	UnitPropertyCondition.WithinRange = AbilityConfig.Range;	// 96 = 1 adjacent tile
-	Template.AbilityTargetConditions.AddItem(UnitPropertyCondition);
-
-	ShooterAbilityCondition = new class'X2Condition_AbilityProperty';
-	ShooterAbilityCondition.OwnerHasSoldierAbilities.AddItem (AbilityConfig.OwnerAbilityToCheck);
-	ShooterAbilityCondition.TargetMustBeInValidTiles = false;
-	Template.AbilityShooterConditions.AddItem(ShooterAbilityCondition);
-
-	TargetWeaponCondition = new class 'X2Condition_UnitInventory';
-	TargetWeaponCondition.ExcludeWeaponCategory = AbilityConfig.WeaponType;
-	TargetWeaponCondition.RelevantSlot = SlotNameToInvSlot(AbilityConfig.SlotName);
-	Template.AbilityTargetConditions.AddItem (TargetWeaponCondition);
-
-	TemporaryItemEffect = new class'X2Effect_TR_TemporaryItem';
-	TemporaryItemEffect.EffectName = 'TakeThisEffect';
-
-	TemporaryItemEffect.ItemName = GetWeaponBasedTech(ItemState, AbilityConfig.WeaponType, AbilityConfig.WeaponName, AbilityConfig.Has5Tier);
-
-	TemporaryItemEffect.bIgnoreItemEquipRestrictions = true;
-	TemporaryItemEffect.BuildPersistentEffect(1, true, false);
-	TemporaryItemEffect.DuplicateResponse = eDupe_Ignore;
-	Template.AddTargetEffect(TemporaryItemEffect);
-
-	// Standard ability to add
-	for (i = 0; i < AbilityConfig.StdAbilityToAdd.length; i++)
+	// Remove trailing comma and space, if present
+	if (Len(StatDesc) >= 2)
 	{
-		WeaponTemplate.Abilities.AddItem(AbilityConfig.StdAbilityToAdd[i]);
+	    StatDesc = Left(StatDesc, Len(StatDesc) - 2);
 	}
 
-	// Give items
-	if (AbilityConfig.GiveItems)
-	{
-		for (k = 0; k < AbilityConfig.ItemsToGive.Length; k++)
-		{
-			// Add the item
-			ItemState = new class'XComGameState_Item';
-			ItemState.ItemName = AbilityConfig.ItemsToGive[k];
-			ItemState.Slot = SlotNameToInvSlot(AbilityConfig.SlotForItems[k]);
-			TemporaryItemEffect.AddItem(ItemState);
-		}
-	}
+	StatEffect.SetDisplayInfo(
+	    ePerkBuff_Passive,
+	    StatDesc,
+	    Template.GetMyLongDescription(),
+	    Template.IconImage,
+    	false
+	);
 
-	// Abilities are added via RNGesus
-	if (AbilityConfig.RandAbilities)
-	{
-		RandAbilityEffect = new class'X2Effect_TR_AddRandomAbilities';
-		RandAbilityEffect.RandAbilities = AbilityConfig.RandAbilitiesToAdd;
-		RandAbilityEffect.ChancePercent = AbilityConfig.RandAbilitiesChance;
-		Template.AddTargetEffect(RandAbilityEffect);
-	}
+    Template.AddTargetEffect(StatEffect);
 
-	if (AbilityConfig.GrantAbilityToClasses)
-	{
-		CharMgr = class'X2CharacterTemplateManager'.static.GetCharacterTemplateManager();
+    Template.bShowActivation = true;
+    Template.bSkipFireAction = true;
+    Template.CustomFireAnim = 'HL_SignalBark';
+    Template.ActivationSpeech = 'HoldTheLine';
+    Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+    Template.BuildVisualizationFn = TypicalAbility_BuildVisualization;
 
-		for (i = 0; i < AbilityConfig.Classes.Length; i++)
-		{
-			ClassName = AbilityConfig.Classes[i];
-			CharacterTemplate = CharMgr.FindCharacterTemplate(ClassName);
-
-			if (CharacterTemplate != none)
-			{
-				bAlreadyHasAbility = false;
-
-				for (j = 0; j < CharacterTemplate.Abilities.Length; j++)
-				{
-					if (CharacterTemplate.Abilities[j] == AbilityConfig.TemplateName)
-					{
-						bAlreadyHasAbility = true;
-						break;
-					}
-				}
-
-				if (!bAlreadyHasAbility)
-				{
-					CharacterTemplate.Abilities.AddItem(AbilityConfig.TemplateName);
-				}
-			}
-			else
-			{
-				`LOG("TR_TakeThisGun_Abilities ERROR: Could not find class template for " $ ClassName,, 'XCom_Gameplay');
-			}
-		}
-	}
-
-
-	StatEffect = new class 'X2Effect_PersistentStatChange';
-	StatEffect.AddPersistentStatChange (eStat_Offense, AbilityConfig.AimChange); // 50 by default
-	StatEffect.AddPersistentStatChange (eStat_SightRadius, AbilityConfig.SightChange); // 15 by default
-	StatEffect.AddPersistentStatChange (eStat_DetectionRadius, AbilityConfig.DetectionRadiusChange); // 9 by default
-	StatEffect.AddPersistentStatChange (eStat_Mobility, AbilityConfig.MobilityChange); // -1 by default
-
-	foreach AbilityConfig.ExtraStats(StatPair)
-	{
-		StatEffect.AddPersistentStatChange(StatNameToEnum(StatPair.name), StatPair.value);
-	}
-
-	StatEffect.BuildPersistentEffect (1, true, false, false);
-	StatEffect.SetDisplayInfo(ePerkBuff_Passive, class'X2TacticalGameRulesetDataStructures'.default.m_aCharStatLabels[eStat_Offense], Template.GetMyLongDescription(), Template.IconImage, false);
-	Template.AddTargetEffect(StatEffect);
-
-	Template.bShowActivation = true;
-	Template.bSkipFireAction = true;
-	Template.CustomFireAnim = 'HL_SignalBark';
-	Template.ActivationSpeech = 'HoldTheLine';
-
-	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
-	Template.BuildVisualizationFn = TypicalAbility_BuildVisualization;
-
-	return Template;
+    return Template;
 }
 
 static function name GetWeaponBasedTech(XComGameState_Item ItemState, name weaponType, name weaponName, bool has5Tier)

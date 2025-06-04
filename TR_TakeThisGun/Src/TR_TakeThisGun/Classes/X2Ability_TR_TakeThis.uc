@@ -3,37 +3,22 @@
 //  AUTHOR:  TRNEEDANAME  --  2025/05/09
 // DATE MODIFIED : 2025/05/10
 //  PURPOSE: Make the "You'll need this" perk, WOTC non LWOTC
-// It devolved into madness fast
 //---------------------------------------------------------------------------------------
 
 
 class X2Ability_TR_TakeThis extends X2Ability config(TR_TakeThis);
 
-// We do a bit of struct as table weirdness
-struct TablePair
-{
-    var name name;
-    var int value;
-};
 
 // Default ability stuff
 var config int TR_TakeThis_APCost; // 1 by default
 var config bool TR_TakeThis_ConsumeAllAP; // false by default
 var config int TR_TakeThis_Range; // 96 by default
-var config bool TR_TakeThis_GrantAbilityToClass;
-var config array<name> TR_TakeThis_Classes;
 
 // Charges
 var config int TR_TakeThis_ChargesDefault;
-var config name TR_TakeThis_ChargesBonusAbility;
-var config int TR_TakeThis_ChargesBonusAmount;
 var config int TR_TakeThis_ChargeCost;
 
-var config bool TR_TakeThis_ChargesBonusAllowAbilities;
-var config array<TablePair> TR_TakeThis_ChargesBonusAbilities;
-
 // Exclude conditions madness
-var config bool TR_TakeThis_ChangeAbilityUnitCondition; // false
 var config bool TR_TakeThis_ExcludeDead; // true 
 var config bool TR_TakeThis_ExcludeHostileToSource; // true
 var config bool TR_TakeThis_ExcludeFriendlyToSource; // false
@@ -51,20 +36,6 @@ var config int TR_TakeThis_AimChange; // 50 by default
 var config int TR_TakeThis_SightChange; // 15 by default
 var config int TR_TakeThis_DetectionRadiusChange; // 9 by default
 var config int TR_TakeThis_MobilityChange; // -1 by default
-
-// Items to give
-var config bool TR_TakeThis_GiveItems; // false by default
-var config array<name> TR_TakeThis_ItemsToGive; // Empty by default
-var config array<name> TR_TakeThis_SlotForItems; // Empty by default
-
-// Extra stats changed
-var config bool TR_TakeThis_ChangeExtraStats; // False by default
-var config array <TablePair> TR_TakeThis_ExtraStats; // Empty by default
-
-// Random abilities to give
-var config bool TR_TakeThis_AddRandomAbilities; // False by default
-var config int TR_TakeThis_RandAbilitiesChance; // 50 by default
-var config array<name> TR_TakeThis_RandAbilitiesToAdd;
 
 static function array<X2DataTemplate> CreateTemplates()
 {
@@ -92,16 +63,12 @@ static function X2AbilityTemplate TR_TakeThis()
     Template.AbilityTargetStyle = CreateSingleTarget();
     AddActionPointCost(Template);
     AddCharges(Template);
-    AddRandomAbilities(Template);
-    AddItemsToGive(Template);
     AddChargeCost(Template);
     Template.HideErrors.AddItem('AA_CannotAfford_Charges');
     Template.AddShooterEffectExclusions();
     AddTargetConditions(Template);
     AddShooterAbilityCondition(Template);
     AddTargetWeaponCondition(Template);
-    AddTemporaryItemEffect(Template);
-    GrantAbilityToClasses(Template);
     //AddOfficerEffectsIfLWOTC(Template);
     AddStatEffects(Template);
 
@@ -138,47 +105,7 @@ static function AddCharges(X2AbilityTemplate Template)
     local TablePair StatPair;
     Charges = new class'X2AbilityCharges_TR_TakeThisCharge';
     Charges.InitialCharges = default.TR_TakeThis_ChargesDefault;
-    Charges.BonusAbility = default.TR_TakeThis_ChargesBonusAbility;
-    Charges.BonusAbilityCharges = default.TR_TakeThis_ChargesBonusAmount;
-    if (default.TR_TakeThis_ChargesBonusAllowAbilities)
-    {
-        foreach default.TR_TakeThis_ChargesBonusAbilities(StatPair)
-        {
-            Charges.BonusAbilityCharges += StatPair.value;
-        }
-    }
     Template.AbilityCharges = Charges;
-}
-
-static function AddRandomAbilities(X2AbilityTemplate Template)
-{
-    local X2Effect_TR_AddRandomAbilities RandAbilityEffect;
-    if (default.TR_TakeThis_AddRandomAbilities)
-    {
-        RandAbilityEffect = new class'X2Effect_TR_AddRandomAbilities';
-        RandAbilityEffect.RandAbilities = default.TR_TakeThis_RandAbilitiesToAdd;
-        RandAbilityEffect.ChancePercent = default.TR_TakeThis_RandAbilitiesChance;
-        Template.AddTargetEffect(RandAbilityEffect);
-    }
-}
-
-static function AddItemsToGive(X2AbilityTemplate Template)
-{
-    local int j;
-    local XComGameState_Item ItemState;
-    local X2Effect_TR_TemporaryItem TemporaryItemEffect;
-    if (default.TR_TakeThis_GiveItems)
-    {
-        TemporaryItemEffect = new class'X2Effect_TR_TemporaryItem';
-        for (j = 0; j < default.TR_TakeThis_ItemsToGive.Length; j++)
-        {
-            ItemState = new class'XComGameState_Item';
-            ItemState.ItemName = default.TR_TakeThis_ItemsToGive[j];
-            ItemState.Slot = SlotNameToInvSlot(default.TR_TakeThis_SlotForItems[j]);
-            TemporaryItemEffect.AddItem(ItemState);
-        }
-        Template.AddTargetEffect(TemporaryItemEffect);
-    }
 }
 
 static function AddChargeCost(X2AbilityTemplate Template)
@@ -225,84 +152,6 @@ static function AddTargetWeaponCondition(X2AbilityTemplate Template)
     TargetWeaponCondition.RelevantSlot = eInvSlot_Utility;
     Template.AbilityTargetConditions.AddItem(TargetWeaponCondition);
 }
-
-static function AddTemporaryItemEffect(X2AbilityTemplate Template)
-{
-    local XComGameState_Item ItemState;
-    local X2Effect_TR_TemporaryItem TemporaryItemEffect;
-    ItemState = none; // Replace with actual logic if needed
-    TemporaryItemEffect = new class'X2Effect_TR_TemporaryItem';
-    TemporaryItemEffect.EffectName = 'TakeThisEffect';
-    TemporaryItemEffect.ItemName = GetWeaponBasedTech(ItemState, 'pistol', 'pistol', true);
-    TemporaryItemEffect.bIgnoreItemEquipRestrictions = true;
-    TemporaryItemEffect.BuildPersistentEffect(1, true, false);
-    TemporaryItemEffect.DuplicateResponse = eDupe_Ignore;
-    Template.AddTargetEffect(TemporaryItemEffect);
-}
-
-static function GrantAbilityToClasses(X2AbilityTemplate Template)
-{
-    local X2CharacterTemplateManager CharMgr;
-    local X2CharacterTemplate CharacterTemplate;
-    local name ClassName;
-    local int i;
-    if (default.TR_TakeThis_GrantAbilityToClass)
-    {
-        CharMgr = class'X2CharacterTemplateManager'.static.GetCharacterTemplateManager();
-        for (i = 0; i < default.TR_TakeThis_Classes.Length; i++)
-        {
-            ClassName = default.TR_TakeThis_Classes[i];
-            CharacterTemplate = CharMgr.FindCharacterTemplate(ClassName);
-            if (CharacterTemplate != none)
-            {
-                CharacterTemplate.Abilities.AddItem('TR_TakeThis');
-            }
-        }
-    }
-}
-
-/*static function AddOfficerEffectsIfLWOTC(X2AbilityTemplate Template)
-{
-	local int k;
-	if (class'Help'.static.IsModActive('LongWarOfTheChosen'))
-	{
-		// We get current officer
-		OfficerRank = 0;
-	    local XComGameState_Unit TargetUnit;
-		local XComGameState_Unit_LWOfficer OfficerComp;
-
-		OfficerComp = GetOfficerComponent(Unit);
-		if (OfficerComp != none)
-		{
-			OfficerRank = OfficerComp.GetOfficerRank();
-		}
-
-		if (AbilityConfig.OfficerGrantAbilities)
-		{
-			if (AbilityConfig.OfficerGrantAbilitiesRNG && AbilityConfig.OfficerAbilitiesGivePerRankRand.Rank == OfficerRank)
-			{
-				for (k = 0; k < AbilityConfig.OfficerAbilitiesGivePerRankRand.Length; k++)
-				{
-					RandAbilityEffect = new class'X2Effect_TR_AddRandomAbilities';
-					RandAbilityEffect.RandAbilities = AbilityConfig.OfficerAbilitiesGivePerRankRand[k].abilities;
-					RandAbilityEffect.ChancePercent = AbilityConfig.OfficerAbilitiesGivePerRankRand[k].RandAbilitiesChance;
-					Template.AddTargetEffect(RandAbilityEffect);
-				}
-			}
-
-			else if (AbilityConfig.OfficerAbilitiesGivePerRank.Rank == OfficerRank)
-			{
-				for (k = 0; k < AbilityConfig.OfficerAbilitiesGivePerRank.Length; k++)
-				{
-					RandAbilityEffect = new class'X2Effect_TR_AddRandomAbilities';
-					RandAbilityEffect.RandAbilities = AbilityConfig.OfficerAbilitiesGivePerRank[k].abilities;
-					RandAbilityEffect.ChancePercent = 100;
-					Template.AddTargetEffect(RandAbilityEffect);
-				}
-			}
-		}
-	}
-}*/
 
 static function AddStatEffects(X2AbilityTemplate Template)
 {
